@@ -219,7 +219,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:14
 /* Ledger table — horizontal scroll */
 .ledger-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
 .ltable{border-collapse:collapse;font-size:12px;min-width:600px;}
-.ltable th{background:#e8ecf2;padding:7px 10px;text-align:center;font-family:var(--mono);font-size:9px;letter-spacing:.8px;text-transform:uppercase;color:var(--t2);border-bottom:2px solid var(--b2);border-right:1px solid var(--border);white-space:nowrap;font-weight:600;}
+.ltable th{background:#e8ecf2;padding:7px 10px;text-align:center;font-family:var(--mono);font-size:9px;letter-spacing:.8px;text-transform:uppercase;color:var(--t2);border-bottom:2px solid var(--b2);border-right:1px solid var(--border);white-space: normal;font-weight:600;}
 .ltable th:first-child{text-align:left;}
 .ltable th:last-child{border-right:none;}
 .ltable td{padding:0;border-bottom:1px solid var(--border);border-right:1px solid var(--border);vertical-align:middle;text-align:center;}
@@ -250,7 +250,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:14
 .dday-d{background:rgba(239,68,68,.2);color:var(--red);}
 /* LOT 변경 감지 */
 
-.cattab{padding:5px 12px;border-radius:4px;border:1px solid var(--b2);background:var(--s2);color:var(--t2);font-size:11px;cursor:pointer;white-space:nowrap;font-family:var(--sans);transition:all .12s;}
+.cattab{padding:5px 12px;border-radius:4px;border:1px solid var(--b2);background:var(--s2);color:var(--t2);font-size:11px;cursor:pointer;white-space: normal;font-family:var(--sans);transition:all .12s;}
 .cattab.act{background:var(--pill-act-bg,var(--accent));color:#fff;border-color:var(--pill-act-bg,var(--accent));font-weight:700;}
 /* alert/more 탭은 accent 유지 */
 #pg-alert .cattab.act{background:var(--accent);color:#fff;border-color:var(--accent);}
@@ -291,7 +291,7 @@ tr.lot-new-grp .cgrp{background:rgba(249,115,22,.1)!important;}
 
 /* Toast */
 .tcon{position:fixed;top:calc(var(--head-h) + 8px);left:50%;transform:translateX(-50%);z-index:400;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;}
-.toast{padding:9px 16px;border-radius:6px;font-size:12px;font-family:var(--mono);background:var(--surface);border:1px solid var(--b2);box-shadow:0 4px 12px rgba(0,0,0,.12);animation:tin .3s ease;white-space:nowrap;color:var(--text);}
+.toast{padding:9px 16px;border-radius:6px;font-size:12px;font-family:var(--mono);background:var(--surface);border:1px solid var(--b2);box-shadow:0 4px 12px rgba(0,0,0,.12);animation:tin .3s ease;white-space: normal;color:var(--text);}
 .toast.s{border-color:rgba(0,135,90,.3);color:var(--green);background:#f0faf6;}
 .toast.w{border-color:rgba(230,126,0,.3);color:var(--yellow);background:#fffbf0;}
 .toast.e{border-color:rgba(204,34,0,.3);color:var(--red);background:#fff5f5;}
@@ -466,6 +466,47 @@ body{
 #pg-alert,#pg-more,.page[id^="pg-"]{background:transparent;}
 #pg-alert .device-header,#pg-more>div{margin-top:10px;}
 #alert-body,#order-body{padding:12px;background:transparent;}
+
+.order-shortcuts{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:2px 0 12px;}
+.order-shortcut{background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(247,250,255,.98));border:1px solid rgba(214,224,238,.95);border-radius:20px;padding:14px 14px 13px;box-shadow:0 12px 26px rgba(26,56,110,.08), inset 0 0 0 1px rgba(255,255,255,.55);}
+.order-shortcut-k{font-size:10px;font-family:var(--mono);letter-spacing:.14em;text-transform:uppercase;color:#8b97a8;margin-bottom:6px;}
+.order-shortcut-v{font-size:19px;font-weight:900;line-height:1;color:#14233b;}
+.order-shortcut-s{margin-top:6px;font-size:11px;color:#64748b;font-weight:700;line-height:1.45;}
+.order-shortcut.emg .order-shortcut-v{color:#ef4444}
+.order-shortcut.reg .order-shortcut-v{color:#2563eb}
+@media (max-width:680px){.order-shortcuts{grid-template-columns:1fr 1fr;gap:8px;}}
+
+.order-sheet{padding:16px;max-height:72vh;overflow:auto;background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(246,249,255,1));}\n.order-sheet[data-emergency-ui="1"]{padding:16px 16px 18px;}\n.order-sheet[data-emergency-ui="1"] .order-sheet-grid{grid-template-columns:1fr 1fr;}\n.order-sheet[data-emergency-ui="1"] .order-sheet-field{min-width:0;}\n.order-sheet[data-emergency-ui="1"] .order-sheet-field input,.order-sheet[data-emergency-ui="1"] .order-sheet-field select,.order-sheet[data-emergency-ui="1"] .order-sheet-field textarea{font-size:15px;font-weight:700;}\n.order-sheet[data-emergency-ui="1"] .order-sheet-item{grid-template-columns:minmax(0,1.4fr) minmax(0,.95fr);grid-template-areas:"name lot" "qty del";gap:10px;padding:12px;}
+.order-sheet[data-emergency-ui="1"] .order-item-name{grid-area:name;}
+.order-sheet[data-emergency-ui="1"] .order-item-lot{grid-area:lot;}
+.order-sheet[data-emergency-ui="1"] .order-item-qty{grid-area:qty;}
+.order-sheet[data-emergency-ui="1"] .order-item-del{grid-area:del;align-self:end;}
+.order-sheet[data-emergency-ui="1"] .order-item-col{min-width:0;}
+.order-sheet[data-emergency-ui="1"] .order-item-input{display:block;width:100%;height:44px;padding:0 14px;border:none;outline:none;border-radius:14px;background:linear-gradient(180deg,#ffffff,#f5f9ff);box-shadow:inset 0 0 0 1px rgba(217,225,237,.98);font-size:15px;color:#132238;font-weight:800;font-family:var(--sans);}
+.order-sheet[data-emergency-ui="1"] .order-item-input::placeholder{color:#97a3b5;font-weight:700;}
+.order-sheet[data-emergency-ui="1"] .order-sheet-remove{width:100%;height:44px;border:none;border-radius:14px;background:#fff1f1;color:#ef4444;font-size:13px;font-weight:900;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(252,165,165,.55);}
+.order-sheet[data-emergency-ui="1"] .order-sheet-actions{grid-template-columns:repeat(3,1fr);}
+.order-sheet[data-emergency-ui="1"] .order-sheet-headerline{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;margin-bottom:2px;}
+.order-sheet[data-emergency-ui="1"] .order-part-badge{display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border-radius:999px;background:#eef5ff;border:1px solid #d6e7ff;color:#2563eb;font-size:12px;font-weight:900;}
+@media (max-width:640px){.order-sheet[data-emergency-ui="1"]{padding:14px;} .order-sheet[data-emergency-ui="1"] .order-sheet-grid{grid-template-columns:1fr;} .order-sheet[data-emergency-ui="1"] .order-sheet-item{grid-template-columns:1fr 1fr;grid-template-areas:"name name" "lot qty" "del del";} .order-sheet[data-emergency-ui="1"] .order-sheet-actions{grid-template-columns:1fr;} }
+.order-sheet-title{font-size:18px;font-weight:900;color:#14233b;letter-spacing:-.3px;}
+.order-sheet-sub{margin-top:4px;font-size:12px;color:#7b8798;line-height:1.6;}
+.order-sheet-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;}
+.order-sheet-field{background:#f8fbff;border:1px solid #dbe7f5;border-radius:18px;padding:12px 13px;}
+.order-sheet-field label{display:block;font-size:11px;font-weight:800;letter-spacing:.04em;color:#7a8aa1;text-transform:uppercase;margin-bottom:6px;}
+.order-sheet-field input,.order-sheet-field select,.order-sheet-field textarea{width:100%;border:none;outline:none;background:transparent;font-size:16px;color:#11243d;font-weight:800;font-family:var(--sans);}
+.order-sheet-field textarea{min-height:70px;font-size:14px;font-weight:700;resize:vertical;}
+.order-sheet-items{margin-top:12px;display:flex;flex-direction:column;gap:10px;}
+.order-sheet-item{display:grid;grid-template-columns:1.4fr .95fr .65fr auto;gap:8px;align-items:end;background:#fff;border:1px solid #dbe7f5;border-radius:18px;padding:10px;}
+.order-sheet-mini{font-size:10px;font-family:var(--mono);color:#8b97a8;margin-bottom:5px;text-transform:uppercase;letter-spacing:.08em;}
+.order-sheet-add{margin-top:10px;width:100%;padding:13px 14px;border:none;border-radius:18px;background:linear-gradient(180deg,#ffffff,#f7faff);box-shadow:0 8px 18px rgba(34,56,92,.07), inset 0 0 0 1px rgba(217,225,237,.95);font-size:13px;font-weight:900;color:#24364d;cursor:pointer;}
+.order-sheet-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px;}
+.order-sheet-btn{padding:14px 10px;border:none;border-radius:18px;font-size:13px;font-weight:900;cursor:pointer;letter-spacing:-0.2px;}
+.order-sheet-btn.save{background:linear-gradient(180deg,#ffffff,#f7faff);color:#314156;box-shadow:0 8px 18px rgba(34,56,92,.07), inset 0 0 0 1px rgba(217,225,237,.95);}
+.order-sheet-btn.print{background:linear-gradient(180deg,#7d8ea6,#5e708b);color:#fff;box-shadow:0 12px 26px rgba(76,99,132,.22);}
+.order-sheet-btn.mail{background:linear-gradient(180deg,#3f8cff,#1f6fff);color:#fff;box-shadow:0 12px 26px rgba(31,111,255,.22);}
+@media (max-width:640px){.order-sheet-grid{grid-template-columns:1fr}.order-sheet-item{grid-template-columns:1fr 1fr}.order-sheet-item>div:last-child{grid-column:span 2}.order-sheet-actions{grid-template-columns:1fr 1fr 1fr}}
+
 .empty-state{border-radius:24px;background:linear-gradient(180deg,rgba(255,255,255,0.92),rgba(247,250,255,0.96));box-shadow:0 14px 34px rgba(26,56,110,0.08), inset 0 0 0 1px rgba(220,227,238,0.94);}
 .modal{border:none;border-radius:30px 30px 0 0;background:linear-gradient(180deg,rgba(255,255,255,0.98),rgba(246,249,255,1));box-shadow:0 -22px 70px rgba(23,43,77,0.18);}
 .modal-info{background:linear-gradient(180deg,#ffffff,#f7faff);border:none;box-shadow:inset 0 0 0 1px rgba(217,225,237,0.95);}
@@ -534,6 +575,232 @@ body{
 .hero-image-preview{height:86px;border-radius:22px;background:linear-gradient(135deg,#e9f2ff,#f8fbff);border:1px solid #dbe7f5;display:flex;align-items:center;justify-content:center;overflow:hidden;color:#6b7b94;font-size:12px;font-weight:700;}
 .hero-image-preview.has-image{padding:0;}
 .hero-image-preview img{width:100%;height:100%;object-fit:cover;display:block;}
+
+
+/* part print table final alignment fix */
+.part-print-wrap table,
+.pdf-print-wrap table,
+.print-wrap table,
+body table.print-ledger,
+body table[data-print-ledger="1"]{
+  width:100% !important;
+  table-layout:fixed !important;
+  border-collapse:collapse !important;
+}
+.part-print-wrap th, .part-print-wrap td,
+.pdf-print-wrap th, .pdf-print-wrap td,
+.print-wrap th, .print-wrap td,
+body table.print-ledger th, body table.print-ledger td,
+body table[data-print-ledger="1"] th, body table[data-print-ledger="1"] td{
+  border:1px solid #bfc4cc !important;
+  font-size:11px !important;
+  line-height:1.2 !important;
+  padding:4px 3px !important;
+  word-break:break-word !important;
+  overflow-wrap:anywhere !important;
+  vertical-align:middle !important;
+}
+.part-print-wrap th:last-child, .part-print-wrap td:last-child,
+.pdf-print-wrap th:last-child, .pdf-print-wrap td:last-child,
+.print-wrap th:last-child, .print-wrap td:last-child,
+body table.print-ledger th:last-child, body table.print-ledger td:last-child,
+body table[data-print-ledger="1"] th:last-child, body table[data-print-ledger="1"] td:last-child{
+  min-width:54px !important;
+  width:54px !important;
+  border-right:1px solid #bfc4cc !important;
+}
+
+
+/* stronger header width expansion */
+.device-header{
+  margin-left: 4px !important;
+  margin-right: 4px !important;
+}
+.dh-top{
+  padding-left: 18px !important;
+  padding-right: 18px !important;
+}
+.reagent-pills{
+  padding-left: 18px !important;
+  padding-right: 18px !important;
+}
+#pg-alert .device-header,
+#pg-503 .device-header,
+#pg-e801 .device-header,
+#pg-b221 .device-header,
+#pg-nx10n .device-header{
+  margin-left: 4px !important;
+  margin-right: 4px !important;
+}
+#pg-alert .dh-top,
+#pg-503 .dh-top,
+#pg-e801 .dh-top,
+#pg-b221 .dh-top,
+#pg-nx10n .dh-top{
+  padding-left: 18px !important;
+  padding-right: 18px !important;
+}
+#pg-alert .reagent-pills,
+#pg-503 .reagent-pills,
+#pg-e801 .reagent-pills,
+#pg-b221 .reagent-pills,
+#pg-nx10n .reagent-pills{
+  padding-left: 18px !important;
+  padding-right: 18px !important;
+}
+@media (max-width:640px){
+  .device-header{
+    margin-left: 2px !important;
+    margin-right: 2px !important;
+  }
+  .dh-top{
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+  .reagent-pills{
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+  #pg-alert .device-header,
+  #pg-503 .device-header,
+  #pg-e801 .device-header,
+  #pg-b221 .device-header,
+  #pg-nx10n .device-header{
+    margin-left: 2px !important;
+    margin-right: 2px !important;
+  }
+  #pg-alert .dh-top,
+  #pg-503 .dh-top,
+  #pg-e801 .dh-top,
+  #pg-b221 .dh-top,
+  #pg-nx10n .dh-top{
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+  #pg-alert .reagent-pills,
+  #pg-503 .reagent-pills,
+  #pg-e801 .reagent-pills,
+  #pg-b221 .reagent-pills,
+  #pg-nx10n .reagent-pills{
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+}
+
+
+/* reagent quick search */
+.reagent-search-wrap{
+  position:relative;
+  flex:0 0 146px;
+  min-width:132px;
+  max-width:160px;
+}
+.reagent-search{
+  width:100%;
+  height:34px;
+  border:1px solid var(--b2);
+  border-radius:12px;
+  background:var(--s2);
+  color:var(--t1);
+  font-family:var(--sans);
+  font-size:12px;
+  padding:0 12px;
+  outline:none;
+}
+.reagent-search::placeholder{color:var(--tdim);}
+.reagent-search-results{
+  position:absolute;
+  top:38px;
+  left:0;
+  right:0;
+  z-index:40;
+  display:none;
+  max-height:220px;
+  overflow:auto;
+  background:rgba(255,255,255,0.98);
+  border:1px solid var(--border);
+  border-radius:14px;
+  box-shadow:0 14px 30px rgba(23,43,77,0.14);
+  padding:6px;
+}
+.reagent-search-results.show{display:block;}
+.reagent-search-item{
+  width:100%;
+  text-align:left;
+  border:none;
+  background:#fff;
+  color:var(--t1);
+  border-radius:10px;
+  padding:10px 12px;
+  font-size:12px;
+  font-family:var(--sans);
+  cursor:pointer;
+}
+.reagent-search-item + .reagent-search-item{margin-top:4px;}
+.reagent-search-item:active{opacity:.75;}
+.reagent-search-empty{
+  padding:10px 12px;
+  color:var(--tdim);
+  font-size:12px;
+}
+@media (max-width:640px){
+  .reagent-search-wrap{
+    flex:0 0 122px;
+    min-width:118px;
+    max-width:128px;
+  }
+  .reagent-search{
+    height:32px;
+    font-size:11px;
+    padding:0 10px;
+  }
+}
+
+
+.reagent-search-wrap{
+  position:relative;
+}
+.reagent-search{
+  padding-right:32px !important;
+}
+.reagent-search-clear{
+  position:absolute;
+  top:5px;
+  right:6px;
+  width:22px;
+  height:22px;
+  border:none;
+  border-radius:999px;
+  background:rgba(148,163,184,.16);
+  color:#64748b;
+  font-size:14px;
+  font-weight:900;
+  line-height:1;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+}
+.reagent-search-clear.show{display:flex;}
+.reagent-search-clear:active{opacity:.7;}
+@media (max-width:640px){
+  .reagent-search-clear{
+    top:5px;
+    right:5px;
+    width:20px;
+    height:20px;
+    font-size:13px;
+  }
+}
+
+
+/* clear button fix */
+.reagent-search-wrap{position:relative !important;}
+.reagent-search{position:relative !important; z-index:1 !important;}
+.reagent-search-clear{
+  z-index:3 !important;
+  pointer-events:auto !important;
+}
 
 </style>
 <script>
@@ -798,6 +1065,13 @@ body{
           <button class="cattab" data-cat="503-cal" onclick="setCat503(this)">CAL&amp;QC</button>
           
         </div>
+        
+        <div class="reagent-search-wrap">
+          <input id="search-503" class="reagent-search" type="text" placeholder="검색" autocomplete="off"
+                 oninput="onReagentSearchInput('503', this.value)" onfocus="onReagentSearchInput('503', this.value)">
+          <button type="button" class="reagent-search-clear" id="search-503-clear" onpointerdown="event.preventDefault();event.stopPropagation();clearReagentSearch('503')">×</button>
+          <div id="search-503-results" class="reagent-search-results"></div>
+        </div>
         <select id="yr-503" onchange="setYear('503',this.value)" style="font-size:11px;padding:3px 6px;border-radius:8px;border:1px solid var(--b2);background:var(--s2);color:var(--t1);font-family:var(--mono);">
           <option value="all">전체</option>
           <option value="2026" selected>2026</option>
@@ -835,6 +1109,13 @@ body{
           <button class="cattab" data-cat="e801-소모" onclick="setCate801(this)">소모시약</button>
           <button class="cattab" data-cat="e801-cal" onclick="setCate801(this)">CAL&amp;QC</button>
         </div>
+        
+        <div class="reagent-search-wrap">
+          <input id="search-e801" class="reagent-search" type="text" placeholder="검색" autocomplete="off"
+                 oninput="onReagentSearchInput('e801', this.value)" onfocus="onReagentSearchInput('e801', this.value)">
+          <button type="button" class="reagent-search-clear" id="search-e801-clear" onpointerdown="event.preventDefault();event.stopPropagation();clearReagentSearch('e801')">×</button>
+          <div id="search-e801-results" class="reagent-search-results"></div>
+        </div>
         <select id="yr-e801" onchange="setYear('e801',this.value)" style="font-size:11px;padding:3px 6px;border-radius:8px;border:1px solid var(--b2);background:var(--s2);color:var(--t1);font-family:var(--mono);">
           <option value="all">전체</option>
           <option value="2026" selected>2026</option>
@@ -866,6 +1147,13 @@ body{
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+        
+        <div class="reagent-search-wrap">
+          <input id="search-b221" class="reagent-search" type="text" placeholder="검색" autocomplete="off"
+                 oninput="onReagentSearchInput('b221', this.value)" onfocus="onReagentSearchInput('b221', this.value)">
+          <button type="button" class="reagent-search-clear" id="search-b221-clear" onpointerdown="event.preventDefault();event.stopPropagation();clearReagentSearch('b221')">×</button>
+          <div id="search-b221-results" class="reagent-search-results"></div>
+        </div>
         <select id="yr-b221" onchange="setYear('b221',this.value)" style="font-size:11px;padding:3px 6px;border-radius:8px;border:1px solid var(--b2);background:var(--s2);color:var(--t1);font-family:var(--mono);">
           <option value="all">전체</option>
           <option value="2026" selected>2026</option>
@@ -893,6 +1181,13 @@ body{
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+        
+        <div class="reagent-search-wrap">
+          <input id="search-nx10n" class="reagent-search" type="text" placeholder="검색" autocomplete="off"
+                 oninput="onReagentSearchInput('nx10n', this.value)" onfocus="onReagentSearchInput('nx10n', this.value)">
+          <button type="button" class="reagent-search-clear" id="search-nx10n-clear" onpointerdown="event.preventDefault();event.stopPropagation();clearReagentSearch('nx10n')">×</button>
+          <div id="search-nx10n-results" class="reagent-search-results"></div>
+        </div>
         <select id="yr-nx10n" onchange="setYear('nx10n',this.value)" style="font-size:11px;padding:3px 6px;border-radius:8px;border:1px solid var(--b2);background:var(--s2);color:var(--t1);font-family:var(--mono);">
           <option value="all">전체</option>
           <option value="2026" selected>2026</option>
@@ -943,14 +1238,32 @@ body{
       <!-- 발주 관리 -->
       <div style="margin-bottom:20px;">
         <div style="font-size:9px;font-family:var(--mono);color:var(--tdim);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">발주 관리</div>
-        <button onclick="openDelivery()" style="width:100%;padding:16px;background:linear-gradient(135deg,#0f4c75,#1b6ca8);border:none;border-radius:14px;display:flex;align-items:center;gap:14px;cursor:pointer;text-align:left;">
+        <button onclick="openDelivery()" style="width:100%;padding:16px;background:linear-gradient(135deg,#0f4c75,#1b6ca8);border:none;border-radius:14px;display:flex;align-items:center;gap:14px;cursor:pointer;text-align:left;box-shadow:0 18px 40px rgba(15,76,117,.22);margin-bottom:12px;">
           <div style="width:44px;height:44px;background:rgba(255,255,255,0.15);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🚚</div>
           <div style="flex:1;">
             <div style="font-size:14px;font-weight:700;color:#fff;">발주서 입고</div>
-            <div style="font-size:11px;color:rgba(255,255,255,0.65);margin-top:2px;">명세서 기반 일괄 입고 등록</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.72);margin-top:2px;">명세서 기반 일괄 입고 등록</div>
           </div>
           <span style="color:rgba(255,255,255,0.5);font-size:20px;">›</span>
         </button>
+        <div class="premium-list">
+          <button onclick="openVendorModal()" class="premium-action">
+            <div class="premium-icon"><svg viewBox="0 0 24 24"><path d="M3 7h18"></path><path d="M5 7v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7"></path><path d="M8 11h8"></path><path d="M8 15h5"></path></svg></div>
+            <div style="flex:1;">
+              <div class="premium-action-title">업체 메일 관리</div>
+              <div class="premium-action-sub">발주처 이메일 여러 곳 등록</div>
+            </div>
+            <span class="premium-chevron">›</span>
+          </button>
+          <button onclick="openRegularConfigModal()" class="premium-action">
+            <div class="premium-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16"></path><path d="M4 12h16"></path><path d="M4 19h10"></path><circle cx="18" cy="19" r="2"></circle></svg></div>
+            <div style="flex:1;">
+              <div class="premium-action-title">정규발주 등록하기</div>
+              <div class="premium-action-sub">시약별 1달 사용량 기준 등록</div>
+            </div>
+            <span class="premium-chevron">›</span>
+          </button>
+        </div>
       </div>
 
       <!-- 데이터 관리 -->
@@ -979,6 +1292,14 @@ body{
             <div style="flex:1;">
               <div class="premium-action-title">엑셀 내보내기</div>
               <div class="premium-action-sub">CSV 파일로 저장</div>
+            </div>
+            <span class="premium-chevron">›</span>
+          </button>
+          <button onclick="printInventorySheet()" class="premium-action">
+            <div class="premium-icon"><svg viewBox="0 0 24 24"><path d="M7 8V4h10v4"/><rect x="6" y="14" width="12" height="6" rx="1"/><path d="M6 10h12a2 2 0 0 1 2 2v3H4v-3a2 2 0 0 1 2-2z"/><path d="M16 17h.01"/></svg></div>
+            <div style="flex:1;">
+              <div class="premium-action-title">한장 출력 양식</div>
+              <div class="premium-action-sub">A4 한장 표 형태로 인쇄</div>
             </div>
             <span class="premium-chevron">›</span>
           </button>
@@ -1163,11 +1484,11 @@ body{
       <div style="padding:12px 16px;border-bottom:1px solid var(--border);background:var(--s2);flex-shrink:0;">
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:130px;">
-            <span style="font-size:11px;color:var(--tdim);white-space:nowrap;">납품일</span>
+            <span style="font-size:11px;color:var(--tdim);white-space: normal;">납품일</span>
             <input type="date" id="dv-date" style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text);font-size:12px;font-family:var(--mono);">
           </div>
           <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:130px;">
-            <span style="font-size:11px;color:var(--tdim);white-space:nowrap;">담당자</span>
+            <span style="font-size:11px;color:var(--tdim);white-space: normal;">담당자</span>
             <select id="dv-person" style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text);font-size:12px;"><option value="">담당자 선택</option><option value="임남영">임남영</option><option value="김지호">김지호</option></select>
           </div>
         </div>
@@ -1188,11 +1509,11 @@ body{
       <div style="padding:12px 16px;border-bottom:1px solid var(--border);background:var(--s2);flex-shrink:0;">
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:130px;">
-            <span style="font-size:11px;color:var(--tdim);white-space:nowrap;">납품일</span>
+            <span style="font-size:11px;color:var(--tdim);white-space: normal;">납품일</span>
             <input type="date" id="dv-date2" style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text);font-size:12px;font-family:var(--mono);">
           </div>
           <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:130px;">
-            <span style="font-size:11px;color:var(--tdim);white-space:nowrap;">담당자</span>
+            <span style="font-size:11px;color:var(--tdim);white-space: normal;">담당자</span>
             <select id="dv-person2" style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text);font-size:12px;"><option value="">담당자 선택</option><option value="임남영">임남영</option><option value="김지호">김지호</option></select>
           </div>
         </div>
@@ -1476,7 +1797,7 @@ function setYear(dvKey, yr){
   };
   (dvMap[dvKey]||[]).forEach(d=>renderLedger(d));
 }
-function setCat503(btn){
+function setCat503(btn){ const s=document.getElementById('search-503'); if(s) s.value=''; _closeReagentSearch('503'); _toggleReagentSearchClear('503'); 
   curCat503=btn.dataset.cat;
   document.querySelectorAll('#pg-503 .cattab').forEach(b=>b.classList.remove('act'));
   btn.classList.add('act');
@@ -1485,7 +1806,7 @@ function setCat503(btn){
     const l=document.getElementById('ledger-'+d); if(l) l.style.display=d===curCat503?'block':'none';
   });
 }
-function setCate801(btn){
+function setCate801(btn){ const s=document.getElementById('search-e801'); if(s) s.value=''; _closeReagentSearch('e801'); _toggleReagentSearchClear('e801'); 
   curCate801=btn.dataset.cat;
   document.querySelectorAll('#pg-e801 .cattab').forEach(b=>b.classList.remove('act'));
   btn.classList.add('act');
@@ -1594,6 +1915,89 @@ function renderAll(){
   DEVS.forEach(dv=>{ renderPills(dv); renderLedger(dv); });
   updateStats();
 }
+
+
+function _toggleReagentSearchClear(pageKey){
+  const input = document.getElementById(`search-${pageKey}`);
+  const btn = document.getElementById(`search-${pageKey}-clear`);
+  if(!input || !btn) return;
+  if(String(input.value || '').length) btn.classList.add('show');
+  else btn.classList.remove('show');
+}
+function clearReagentSearch(pageKey){
+  const input = document.getElementById(`search-${pageKey}`);
+  const box = document.getElementById(`search-${pageKey}-results`);
+  if(input) input.value = '';
+  if(box){
+    box.innerHTML = '';
+    box.classList.remove('show');
+  }
+  _toggleReagentSearchClear(pageKey);
+}
+function _currentChemDvByPageKey(pageKey){
+  if(pageKey === '503') return curCat503;
+  if(pageKey === 'e801') return curCate801;
+  if(pageKey === 'b221') return 'b221-주시약';
+  if(pageKey === 'nx10n') return 'nx10n-주시약';
+  return '503-주시약';
+}
+function _closeReagentSearch(pageKey){
+  const box = document.getElementById(`search-${pageKey}-results`);
+  if(box) box.classList.remove('show');
+}
+function _closeAllReagentSearch(){
+  ['503','e801','b221','nx10n'].forEach(_closeReagentSearch);
+}
+function _selectReagentFromSearch(pageKey, dv, reagentId){
+  const input = document.getElementById(`search-${pageKey}`);
+  const reagent = S.reagents.find(r => r.id === reagentId);
+  curSelReagent[dv] = reagentId;
+  renderPills(dv);
+  renderLedger(dv);
+  if(input) input.value = reagent ? reagent.name : '';
+  _toggleReagentSearchClear(pageKey);
+  _closeReagentSearch(pageKey);
+}
+function onReagentSearchInput(pageKey, rawValue){
+  _toggleReagentSearchClear(pageKey);
+  const box = document.getElementById(`search-${pageKey}-results`);
+  if(!box) return;
+  const q = String(rawValue || '').trim().toLowerCase();
+  if(q.length < 2){
+    box.classList.remove('show');
+    box.innerHTML = '';
+    return;
+  }
+  const dv = _currentChemDvByPageKey(pageKey);
+  const list = S.reagents
+    .filter(r => r.device === dv)
+    .map(r => ({ id:r.id, name:String(r.name||'') }))
+    .filter(r => {
+      const n = r.name.toLowerCase();
+      return n.startsWith(q) || n.includes(q);
+    })
+    .sort((a,b) => {
+      const an = a.name.toLowerCase(), bn = b.name.toLowerCase();
+      const ap = an.startsWith(q) ? 0 : 1;
+      const bp = bn.startsWith(q) ? 0 : 1;
+      if(ap !== bp) return ap - bp;
+      return an.localeCompare(bn);
+    })
+    .slice(0, 20);
+
+  if(!list.length){
+    box.innerHTML = '<div class="reagent-search-empty">검색 결과 없음</div>';
+    box.classList.add('show');
+    return;
+  }
+  box.innerHTML = list.map(item =>
+    `<button type="button" class="reagent-search-item" onclick="_selectReagentFromSearch('${pageKey}','${dv}','${item.id}')">${esc(item.name)}</button>`
+  ).join('');
+  box.classList.add('show');
+}
+document.addEventListener('click', function(e){
+  if(!e.target.closest('.reagent-search-wrap')) _closeAllReagentSearch();
+});
 
 function renderPills(dv){
   const container=document.getElementById('pills-'+dv);
@@ -1782,13 +2186,13 @@ function renderLedger(dv){
 
       // 개봉자 셀
       const personCell = kId
-        ? `<td style="height:36px;cursor:pointer" data-person-id="${kId}" onclick="quickSetPerson(this.dataset.personId)"><div class="ci" style="font-size:11px;white-space:nowrap;${person?'':'color:var(--accent);'}">${person||'선택'}</div></td>`
+        ? `<td style="height:36px;cursor:pointer" data-person-id="${kId}" onclick="quickSetPerson(this.dataset.personId)"><div class="ci" style="font-size:11px;white-space: normal;${person?'':'color:var(--accent);'}">${person||'선택'}</div></td>`
         : `<td style="height:36px"><div class="ci"></div></td>`;
 
       // 비고 셀 - 클릭하면 편집
       const noteVal = k ? (k.note2||'') : '';
       const noteCell = kId
-        ? `<td style="height:36px;cursor:pointer" data-note-id="${kId}" onclick="quickSetNote(this.dataset.noteId)"><div class="ci" style="font-size:10px;color:${noteVal?'var(--text)':'var(--tdim)'};white-space:nowrap;max-width:60px;overflow:hidden;text-overflow:ellipsis;">${noteVal||'—'}</div></td>`
+        ? `<td style="height:36px;cursor:pointer" data-note-id="${kId}" onclick="quickSetNote(this.dataset.noteId)"><div class="ci" style="font-size:10px;color:${noteVal?'var(--text)':'var(--tdim)'};white-space: normal;max-width:60px;overflow:hidden;text-overflow:ellipsis;">${noteVal||'—'}</div></td>`
         : `<td style="height:36px"><div class="ci"></div></td>`;
 
       const row=`
@@ -2024,7 +2428,7 @@ function printLedger(dv){
         const k = kids[ri]||null;
         const type = k?(k.type==='개봉M'?'Main':k.type==='개봉S'?'Sub':k.type==='폐기'?'폐기':'입고'):'';
         const isD = k&&k.type==='폐기';
-        const row=`<td>${k&&!isD?k.registeredAt:''}</td><td>${k&&isD?k.registeredAt:''}</td><td>${k?k.person||'':''}</td><td>${type}</td>`;
+        const row=`<td>${k&&!isD?k.registeredAt:''}</td><td>${k&&isD?k.registeredAt:''}</td><td>${k?k.person||'':''}</td><td>${type}</td><td>${k?(k.note||''):''}</td>`;
         if(ri===0) rows+=`<tr class="grp">${ibCells}${row}</tr>`;
         else rows+=`<tr>${row}</tr>`;
       }
@@ -2048,76 +2452,48 @@ function printLedger(dv){
   // Blob URL 방식으로 팝업 차단 우회
   const htmlContent = `<!DOCTYPE html><html><head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${dvName} 시약 관리 원장 — ${ym}</title>
     <style>
       *{box-sizing:border-box;margin:0;padding:0;}
-      body{font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif;font-size:11px;color:#111;padding:20px;}
-      h1{font-size:16px;margin-bottom:4px;}
-      .sub{font-size:11px;color:#666;margin-bottom:16px;}
-      h3{break-inside:avoid;}
-      table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:10px;}
-      th{background:#f0f0f0;border:1px solid #ccc;padding:5px 7px;text-align:center;white-space:nowrap;}
-      td{border:1px solid #ddd;padding:4px 7px;text-align:center;vertical-align:middle;}
-      td:first-child{text-align:left;}
-      tr.grp td{border-top:2px solid #aaa;}
-      @media print{body{padding:10px;}@page{margin:15mm;}}
-    
-/* --- v2 premium unified tweaks --- */
-#head-back-btn{background:linear-gradient(180deg,#ffffff,#f3f7fd)!important;color:#334155!important;border:1px solid rgba(203,213,225,.95)!important;border-radius:999px!important;padding:12px 18px!important;box-shadow:0 10px 24px rgba(15,23,42,.08), inset 0 0 0 1px rgba(255,255,255,.76)!important;}
-#pg-more{background:linear-gradient(180deg,#f5f8fd 0%,#eef4fb 100%)!important;}
-#pg-more > div{padding:18px 16px 42px!important;}
-#pg-more .premium-list{background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(246,250,255,.98));border-radius:26px;overflow:hidden;border:1px solid rgba(214,224,238,.95);box-shadow:0 18px 44px rgba(25,55,110,.08), inset 0 0 0 1px rgba(255,255,255,.62);backdrop-filter:blur(14px);}
-#pg-more .premium-action{width:100%;padding:18px 18px;background:none;border:none;border-bottom:1px solid rgba(220,228,239,.92);display:flex;align-items:center;gap:14px;cursor:pointer;text-align:left;}
-#pg-more .premium-action:last-child{border-bottom:none;}
-#pg-more .premium-icon{width:46px;height:46px;border-radius:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:linear-gradient(180deg,#f7fbff,#e7f0ff);box-shadow:0 10px 24px rgba(37,99,235,.10), inset 0 0 0 1px rgba(191,219,254,.9);color:#2563eb;}
-#pg-more .premium-icon svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
-#pg-more .premium-action-title{font-size:15px;font-weight:800;color:#18212f;letter-spacing:-.2px;}
-#pg-more .premium-action-sub{font-size:12px;color:#7b8798;margin-top:4px;font-weight:600;}
-#pg-more .premium-chevron{color:#94a3b8;font-size:20px;font-weight:700;}
-#pg-more .more-section-cap{font-size:10px!important;font-family:var(--mono)!important;color:#8b97a8!important;letter-spacing:2px!important;text-transform:uppercase!important;margin-bottom:10px!important;padding-left:4px;}
-#pg-more .danger-action{background:linear-gradient(180deg,#fff4f4,#ffefef)!important;border:1px solid rgba(248,113,113,.28)!important;border-radius:22px!important;box-shadow:0 16px 34px rgba(239,68,68,.08), inset 0 0 0 1px rgba(255,255,255,.5)!important;}
-#pg-more .danger-action .premium-icon{background:linear-gradient(180deg,#fff1f1,#ffe0e0)!important;box-shadow:0 10px 24px rgba(239,68,68,.10), inset 0 0 0 1px rgba(252,165,165,.92)!important;color:#ef4444!important;}
-#pg-more .summary-shell{background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(247,250,255,.98));border-radius:26px;padding:14px;border:1px solid rgba(214,224,238,.95);box-shadow:0 18px 44px rgba(25,55,110,.08), inset 0 0 0 1px rgba(255,255,255,.62);}
-#summary-cards{gap:10px!important;}
-#expiry-list{background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(247,250,255,.98));border-radius:26px;padding:14px;border:1px solid rgba(214,224,238,.95);box-shadow:0 18px 44px rgba(25,55,110,.08), inset 0 0 0 1px rgba(255,255,255,.62);min-height:60px;}
-#pg-more .hero-link{position:relative;overflow:hidden;border:none!important;border-radius:28px!important;background:linear-gradient(135deg,#1f78d1 0%,#155fb1 48%,#0d3d7b 100%)!important;box-shadow:0 22px 48px rgba(20,92,173,.22), inset 0 0 0 1px rgba(255,255,255,.12)!important;padding:20px 18px!important;}
-#pg-more .hero-link .premium-icon{background:rgba(255,255,255,.18)!important;color:#fff!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.16)!important;}
-#pg-more .hero-link .premium-action-title,#pg-more .hero-link .premium-action-sub,#pg-more .hero-link .premium-chevron{color:#fff!important;}
-#pg-more .hero-link .premium-action-sub{opacity:.78;}
-
-
-.hero-edit-btn{position:absolute;right:14px;top:50%;transform:translateY(-50%);z-index:4;width:46px;height:46px;border:none;border-radius:50%;background:rgba(21,33,58,.30);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 10px 24px rgba(15,23,42,.16), inset 0 0 0 1px rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;color:#fff;cursor:pointer;}
-.hero-edit-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.9}
-.hero-custom-sheet{display:none;position:fixed;inset:0;z-index:420;background:rgba(15,23,42,.28);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);}
-.hero-custom-panel{position:absolute;left:12px;right:12px;bottom:12px;background:rgba(255,255,255,.92);border-radius:28px;padding:18px;box-shadow:0 28px 60px rgba(15,23,42,.24), inset 0 0 0 1px rgba(255,255,255,.75);}
-.hero-custom-title{font-size:18px;font-weight:900;letter-spacing:-.5px;color:#132238;margin-bottom:4px;}
-.hero-custom-sub{font-size:12px;color:#64748b;margin-bottom:14px;}
-.hero-custom-grid{display:grid;gap:10px;}
-.hero-field{background:#f8fbff;border:1px solid #dbe7f5;border-radius:18px;padding:12px 14px;}
-.hero-field label{display:block;font-size:11px;font-weight:800;letter-spacing:.4px;color:#7a8aa1;text-transform:uppercase;margin-bottom:6px;}
-.hero-field input{width:100%;border:none;outline:none;background:transparent;font-size:15px;color:#10233d;font-weight:700;}
-.hero-actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px;}
-.hero-btn{padding:12px 10px;border-radius:18px;border:1px solid #d7e3f0;background:#fff;color:#334155;font-size:14px;font-weight:800;cursor:pointer;}
-.hero-btn.primary{background:linear-gradient(180deg,#2f8cff 0%,#1673eb 100%);border-color:#1673eb;color:#fff;box-shadow:0 14px 28px rgba(22,115,235,.22);}
-.hero-image-preview{height:86px;border-radius:22px;background:linear-gradient(135deg,#e9f2ff,#f8fbff);border:1px solid #dbe7f5;display:flex;align-items:center;justify-content:center;overflow:hidden;color:#6b7b94;font-size:12px;font-weight:700;}
-.hero-image-preview.has-image{padding:0;}
-.hero-image-preview img{width:100%;height:100%;object-fit:cover;display:block;}
-
-</style>
+      body{font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif;color:#111;background:#fff;padding:10mm 7mm 12mm;font-size:9px;line-height:1.25;}
+      h1{font-size:17px;font-weight:700;letter-spacing:-0.3px;margin-bottom:4px;}
+      .sub{font-size:10px;color:#666;margin-bottom:12px;}
+      .ledger-print-section{margin-bottom:12px;break-inside:avoid-page;page-break-inside:avoid;}
+      .ledger-print-title{margin:0 0 5px;padding-left:8px;border-left:4px solid #555;font-size:12px;font-weight:700;letter-spacing:-0.2px;}
+      .ledger-print-title span{font-size:9px;color:#888;font-weight:400;}
+      table{width:100%;border-collapse:collapse;table-layout:fixed;margin-bottom:2px;font-size:7.2px;}
+      thead{display:table-header-group;}
+      tbody tr{break-inside:avoid-page;page-break-inside:avoid;height:18px;}
+      th,td{border:1px solid #bfc4cc;padding:2px 3px;vertical-align:middle;text-align:center;white-space: normal;overflow:visible;text-overflow:clip;word-break:keep-all;}
+      th{background:#f1f3f5;font-weight:700;white-space: normal;}
+      td{background:#fff;line-height:1.15;}
+      tr.grp td{border-top:2px solid #8e949b;}
+      .empty{color:#888;font-size:9px;margin:0 0 10px 2px;}
+      .col-date{width:12%;}
+      .col-lot{width:12%;}
+      .col-qty{width:6%;}
+      .col-exp{width:12%;}
+      .col-open{width:12%;}
+      .col-dispose{width:11%;}
+      .col-person{width:9%;}
+      .col-main{width:8%;}
+      .col-note{width:8%;}
+      @page{size:A4 portrait;margin:7mm 5mm 9mm;}
+      @media print{
+        body{padding:0;font-size:7.4px;}
+        .print-toolbar{display:none!important;}
+        .ledger-print-section{margin-bottom:8px;}
+        h1{font-size:15px;}
+      }
+      .print-toolbar{position:fixed;top:10px;right:10px;z-index:9999;display:flex;gap:8px;}
+      .print-btn{padding:9px 16px;border:1px solid #2563eb;border-radius:8px;background:#fff;color:#2563eb;font-size:13px;font-weight:700;cursor:pointer;}
+    </style>
   </head><body>
+    <div class="print-toolbar"><button class="print-btn" onclick="window.print()">인쇄 / 저장</button></div>
     <h1>${dvName} 시약 관리 원장</h1>
     <div class="sub">출력일: ${now.toLocaleDateString('ko-KR')} &nbsp;|&nbsp; ${ym}</div>
-    ${tables}
-    <scr"+"ipt>
-      window.onload=function(){
-        // 다운로드 버튼 추가
-        var btn=document.createElement('button');
-        btn.textContent='📥 PDF 저장';
-        btn.style.cssText='position:fixed;top:10px;right:10px;padding:10px 20px;background:var(--s2);color:var(--accent);border:2px solid var(--accent);border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;z-index:9999;';
-        btn.onclick=function(){window.print();};
-        document.body.appendChild(btn);
-      };
-    <\/script>
+    ${tables.replace(/<h3 style="margin:18px 0 6px;font-size:13px;border-left:4px solid #555;padding-left:8px;">/g,'<section class="ledger-print-section"><h3 class="ledger-print-title">').replace(/<\/h3>/g,'</h3>').replace(/<p style="color:#999;font-size:11px;margin:0 0 12px;">이력 없음<\/p>/g,'<p class="empty">이력 없음</p></section>').replace(/<table>/g,'<table><colgroup><col class="col-date"><col class="col-lot"><col class="col-qty"><col class="col-exp"><col class="col-open"><col class="col-dispose"><col class="col-person"><col class="col-main"><col class="col-note"></colgroup>').replace(/<\/table>/g,'</table></section>')}
   `;
   const blob = new Blob([htmlContent], {type:'text/html'});
   const url = URL.createObjectURL(blob);
@@ -2334,18 +2710,61 @@ function undoLast(){
 }
 
 let _outsideHandler = null;
-function closePersonPop(){
+let _popupPopstateHandler = null;
+function closePersonPop(fromPopState){
   if(_personPopEl){ _personPopEl.remove(); _personPopEl=null; }
-  if(_outsideHandler){ document.removeEventListener('click', _outsideHandler); _outsideHandler=null; }
+  if(_outsideHandler){ document.removeEventListener('mousedown', _outsideHandler, true); document.removeEventListener('touchstart', _outsideHandler, true); _outsideHandler=null; }
+  if(_popupPopstateHandler){ window.removeEventListener('popstate', _popupPopstateHandler); _popupPopstateHandler=null; }
+  if(!fromPopState && history.state && history.state.personPopOpen){
+    history.back();
+  }
 }
-
+function _bindEmergencyPopupActions(pop){
+  const map = {
+    add: ()=>addEmergencyItem(),
+    save: ()=>saveEmergencyOrder(),
+    print: ()=>printEmergencyOrder(),
+    mail: ()=>emailEmergencyOrder()
+  };
+  pop.querySelectorAll('[data-emg-action]').forEach((el)=>{
+    const fn = map[el.getAttribute('data-emg-action')];
+    if(!fn) return;
+    const handler = function(ev){
+      ev.preventDefault();
+      ev.stopPropagation();
+      fn();
+    };
+    el.addEventListener('click', handler, {passive:false});
+  });
+  pop.querySelectorAll('[data-emg-remove]').forEach((el)=>{
+    const idx = parseInt(el.getAttribute('data-emg-remove')||'-1',10);
+    const handler = function(ev){
+      ev.preventDefault();
+      ev.stopPropagation();
+      removeEmergencyItem(idx);
+    };
+    el.addEventListener('click', handler, {passive:false});
+  });
+}
 function _makePop(html){
-  closePersonPop();
+  closePersonPop(true);
   const pop = document.createElement('div');
   pop.id = 'person-pop';
-  pop.style.cssText = 'position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.5);overflow:hidden;min-width:200px;max-width:320px;width:90%;left:50%;top:50%;transform:translate(-50%,-50%);max-height:80vh;overflow-y:auto;';
+  pop.style.cssText = 'position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 14px 36px rgba(0,0,0,.28);overflow:hidden;min-width:200px;max-width:360px;width:92%;left:50%;top:50%;transform:translate(-50%,-50%);max-height:82vh;overflow-y:auto;';
   pop.innerHTML = html;
   document.body.appendChild(pop);
+  if(pop.querySelector('[data-order-sheet="emergency"]')){
+    pop.style.maxWidth = '560px';
+    pop.style.width = '94%';
+    pop.style.maxHeight = '86vh';
+    pop.style.borderRadius = '22px';
+    _bindEmergencyPopupActions(pop);
+    if(!(history.state && history.state.personPopOpen)){
+      history.pushState({personPopOpen:true}, '');
+    }
+    _popupPopstateHandler = function(){ closePersonPop(true); };
+    window.addEventListener('popstate', _popupPopstateHandler, {once:true});
+  }
   _personPopEl = pop;
   setTimeout(()=>{
     _outsideHandler = function(ev){
@@ -2353,7 +2772,8 @@ function _makePop(html){
         closePersonPop();
       }
     };
-    document.addEventListener('click', _outsideHandler);
+    document.addEventListener('mousedown', _outsideHandler, true);
+    document.addEventListener('touchstart', _outsideHandler, true);
   }, 0);
 }
 
@@ -2751,6 +3171,20 @@ function renderOrder(){
   };
 
   el.innerHTML = `
+    <div class="order-shortcuts">
+      <div class="order-shortcut emg" onclick="openEmergencyQuick()" style="cursor:pointer;">
+        <div class="order-shortcut-k">Emergency Order</div>
+        <div class="order-shortcut-v">응급발주</div>
+        <div class="order-shortcut-s">간편 입력 열기</div>
+        <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;" id="emg-card-info"></div>
+      </div>
+      <div class="order-shortcut reg" onclick="openRegularQuick()" style="cursor:pointer;">
+        <div class="order-shortcut-k">Regular Order</div>
+        <div class="order-shortcut-v">정규발주</div>
+        <div class="order-shortcut-s" id="reg-card-sub">등록 기준 불러오기</div>
+        <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;" id="reg-card-info"></div>
+      </div>
+    </div>
     <div style="font-size:11px;color:var(--tdim);margin-bottom:10px;">총 ${lowStock.length}개 시약 재고 부족</div>
     ${lowStock.map(({r, stock}) => {
       const devKey = r.device.split('-')[0];
@@ -2770,8 +3204,551 @@ function renderOrder(){
       `;
     }).join('')}
   `;
+
+  // 응급발주 카드 뱃지 업데이트
+  const emgInfo = document.getElementById('emg-card-info');
+  if(emgInfo) {
+    const ctx = typeof getCurrentOrderContext === 'function' ? getCurrentOrderContext() : {};
+    const partName = ctx.partName || '';
+    const devCount = ctx.devices ? ctx.devices.length : 0;
+    emgInfo.innerHTML =
+      (partName ? `<span style="font-size:10px;background:#fff1f2;color:#dc2626;border:1px solid #fecaca;border-radius:20px;padding:3px 8px;font-weight:700;">${esc(partName)}</span>` : '') +
+      (devCount ? `<span style="font-size:10px;background:#f0f9ff;color:#0369a1;border:1px solid #bae6fd;border-radius:20px;padding:3px 8px;font-weight:700;">장비 ${devCount}개</span>` : '') +
+      (lowStock.length ? `<span style="font-size:10px;background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:20px;padding:3px 8px;font-weight:700;">부족 ${lowStock.length}개</span>` : '');
+  }
+
+  // 정규발주 카드 뱃지 업데이트
+  const regInfo = document.getElementById('reg-card-info');
+  if(regInfo) {
+    const ctx = typeof getCurrentOrderContext === 'function' ? getCurrentOrderContext() : {};
+    const partName = ctx.partName || '';
+    const devCount = ctx.devices ? ctx.devices.length : 0;
+    const regCount = Array.isArray(S.regularConfigs) ? S.regularConfigs.length : 0;
+    regInfo.innerHTML =
+      (partName ? `<span style="font-size:10px;background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;border-radius:20px;padding:3px 8px;font-weight:700;">${esc(partName)}</span>` : '') +
+      (devCount ? `<span style="font-size:10px;background:#f0f9ff;color:#0369a1;border:1px solid #bae6fd;border-radius:20px;padding:3px 8px;font-weight:700;">장비 ${devCount}개</span>` : '') +
+      (regCount ? `<span style="font-size:10px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:20px;padding:3px 8px;font-weight:700;">기준 ${regCount}개</span>` : '<span style="font-size:10px;background:#fef9c3;color:#854d0e;border:1px solid #fde68a;border-radius:20px;padding:3px 8px;font-weight:700;">미등록</span>');
+  }
 }
 
+
+
+let emergencyDraft = { device:'', vendorId:'', requester:'', note:'', items:[{name:'', lot:'', qty:''}] };
+
+function getCurrentOrderContext(){
+  if(_currentPart){
+    const list = (S.customDevices||[]).filter(d => d.partId === _currentPart).map(d => ({ value:d.id, label:d.name || d.id }));
+    return { partId:_currentPart, partName:(PARTS[_currentPart] && PARTS[_currentPart].name) || '파트', devices:list };
+  }
+  const chemNav = document.querySelector('#nav-chem .nav-item.active');
+  const currentPg = chemNav ? chemNav.getAttribute('data-pg') : '503';
+  const chemDevices = [
+    { value:'503', label:'c503' },
+    { value:'e801', label:'e801' },
+    { value:'b221', label:'b221' },
+    { value:'nx10n', label:'NX10N' }
+  ];
+  return {
+    partId:'chem',
+    partName:'화학',
+    devices:chemDevices,
+    activeDevice:currentPg
+  };
+}
+function getPartDevicesForOrder(){
+  return getCurrentOrderContext().devices || [];
+}
+function getCurrentPartName(){
+  return getCurrentOrderContext().partName || '파트';
+}
+function getSelectedVendor(){
+  return (S.orderVendors||[]).find(v => v.id === emergencyDraft.vendorId) || {name:'', email:'', cc:''};
+}
+function ensureEmergencyDefaults(){
+  const ctx = getCurrentOrderContext();
+  const devices = ctx.devices || [];
+  if(!emergencyDraft.device || !devices.some(d => d.value === emergencyDraft.device)){
+    emergencyDraft.device = ctx.activeDevice || (devices[0] ? devices[0].value : '');
+  }
+  const vendors = S.orderVendors || [];
+  if(!emergencyDraft.vendorId || !vendors.some(v => v.id === emergencyDraft.vendorId)) emergencyDraft.vendorId = vendors[0] ? vendors[0].id : '';
+  if(!Array.isArray(emergencyDraft.items) || !emergencyDraft.items.length) emergencyDraft.items = [{name:'', lot:'', qty:''}];
+}
+function updateEmergencyField(key, value){ emergencyDraft[key] = value; }
+function updateEmergencyItem(idx, key, value){ if(!emergencyDraft.items[idx]) return; emergencyDraft.items[idx][key] = value; }
+function clearEmergencyDraft(keepVendor){
+  const currentVendorId = keepVendor ? (emergencyDraft.vendorId || '') : '';
+  emergencyDraft = { device:'', vendorId:currentVendorId, requester:'', note:'', items:[{name:'', lot:'', qty:''}] };
+  ensureEmergencyDefaults();
+}
+function addEmergencyItem(){ emergencyDraft.items.push({name:'', lot:'', qty:''}); openEmergencyQuick(); }
+function removeEmergencyItem(idx){ emergencyDraft.items.splice(idx,1); if(!emergencyDraft.items.length) emergencyDraft.items=[{name:'', lot:'', qty:''}]; openEmergencyQuick(); }
+function buildEmergencyOrderPayload(){
+  ensureEmergencyDefaults();
+  const vendor = getSelectedVendor();
+  const devices = getPartDevicesForOrder();
+  const deviceObj = devices.find(d => d.value === emergencyDraft.device) || {label:''};
+  const items = (emergencyDraft.items||[]).map(it => ({
+    name:String(it.name||'').trim(),
+    lot:String(it.lot||'').trim(),
+    qty:String(it.qty||'').trim()
+  })).filter(it => it.name || it.lot || it.qty);
+  const ctx = getCurrentOrderContext();
+  return {
+    savedAt: new Date().toISOString(),
+    partId: ctx.partId,
+    partName: ctx.partName,
+    device: emergencyDraft.device || '',
+    deviceLabel: deviceObj.label || '',
+    vendorId: emergencyDraft.vendorId || '',
+    vendorName: vendor.name || '',
+    requester: String(emergencyDraft.requester||'').trim(),
+    note: String(emergencyDraft.note||'').trim(),
+    items
+  };
+}
+function saveEmergencyOrder(){
+  const payload = buildEmergencyOrderPayload();
+  if(!payload.items.length){ toast('품목을 1개 이상 입력해주세요','w'); return; }
+  S.emergencyOrders = Array.isArray(S.emergencyOrders) ? S.emergencyOrders : [];
+  S.emergencyOrders.unshift(payload);
+  save(); if(window.fs_save) window.fs_save();
+  toast('응급발주 저장 완료','s');
+}
+function printEmergencyOrder(){
+  const source = buildEmergencyOrderPayload();
+  if(!source.items.length){ toast('출력할 품목이 없어요','w'); return; }
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>응급발주서</title><style>body{font-family:Arial,'Noto Sans KR',sans-serif;padding:24px;color:#111}h1{font-size:22px;margin:0 0 8px}table{width:100%;border-collapse:collapse;margin-top:16px}th,td{border:1px solid #cfd8e3;padding:8px;font-size:13px}th{background:#f5f8fc}.meta{margin:8px 0 14px;font-size:13px;line-height:1.7}.note{margin-top:18px;font-size:13px;line-height:1.7}.sign-wrap{display:flex;justify-content:flex-end;margin-top:28px}.sign{width:300px;border-collapse:collapse}.sign th,.sign td{border:1px solid #cfd8e3;text-align:center;padding:8px;font-size:12px}.sign th{background:#fff}.sign td{height:64px}@media print{body{padding:16px}}</style></head><body><h1>응급발주서</h1><div class="meta">일자: ${source.savedAt.slice(0,10)}<br>파트: ${esc(source.partName)}<br>장비: ${esc(source.deviceLabel || source.device || '-')}<br>업체: ${esc(source.vendorName || '-')}</div><table><thead><tr><th>품목명</th><th>LOT</th><th>수량</th></tr></thead><tbody>${source.items.map(it=>`<tr><td>${esc(it.name||'')}</td><td>${esc(it.lot||'')}</td><td>${esc(it.qty||'')}</td></tr>`).join('')}</tbody></table><div class="note">비고: ${esc(source.note||'-')}<br>요청자: ${esc(source.requester||'-')}</div><div class="sign-wrap"><table class="sign"><tr><th>담당자</th><th>팀장</th><th>과장</th></tr><tr><td></td><td></td><td></td></tr></table></div></body></html>`;
+
+  try{
+    let iframe = document.getElementById('emergency-print-frame');
+    if(iframe) iframe.remove();
+    iframe = document.createElement('iframe');
+    iframe.id = 'emergency-print-frame';
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.style.opacity = '0';
+    iframe.setAttribute('aria-hidden','true');
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(html);
+    doc.close();
+
+    const runPrint = () => {
+      try{
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+      }catch(e){
+        toast('출력 창을 여는 중 문제가 발생했어요','w');
+      }
+    };
+
+    if(iframe.contentWindow.document.readyState === 'complete'){
+      setTimeout(runPrint, 120);
+    }else{
+      iframe.onload = () => setTimeout(runPrint, 120);
+    }
+
+    setTimeout(() => {
+      const old = document.getElementById('emergency-print-frame');
+      if(old) old.remove();
+    }, 60000);
+  }catch(e){
+    toast('출력 기능 실행 중 문제가 발생했어요','w');
+    console.error(e);
+  }
+}
+function emailEmergencyOrder(){
+  const source = buildEmergencyOrderPayload();
+  if(!source.items.length){ toast('메일로 보낼 품목이 없어요','w'); return; }
+  const vendor = getSelectedVendor();
+  const lines = [
+    '응급발주서',
+    '',
+    `일자: ${source.savedAt.slice(0,10)}`,
+    `파트: ${source.partName}`,
+    `장비: ${source.deviceLabel || source.device || '-'}`,
+    `업체: ${source.vendorName || '-'}`,
+    '',
+    '[품목]',
+    ...source.items.map(it => `- ${it.name || '-'} / LOT: ${it.lot || '-'} / 수량: ${it.qty || '-'}`),
+    '',
+    `비고: ${source.note || '-'}`,
+    `요청자: ${source.requester || '-'}`
+  ];
+  const mailto = `mailto:${encodeURIComponent(vendor.email||'')}?cc=${encodeURIComponent(vendor.cc||'')}&subject=${encodeURIComponent(`[응급발주] ${source.partName} ${source.deviceLabel || ''}`.trim())}&body=${encodeURIComponent(lines.join('\n'))}`;
+  location.href = mailto;
+  clearEmergencyDraft(true);
+  openEmergencyQuick();
+  toast('메일 작성창을 열었습니다. 입력 내용은 초기화했어요.','s');
+}
+function openEmergencyQuick(){
+  ensureEmergencyDefaults();
+  const ctx = getCurrentOrderContext();
+  const devices = ctx.devices || [];
+  const vendors = S.orderVendors || [];
+  const vendorOpts = vendors.length
+    ? vendors.map(v => `<option value="${esc(v.id)}" ${v.id===emergencyDraft.vendorId?'selected':''}>${esc(v.name||v.email||'업체')}</option>`).join('')
+    : '<option value="">업체 메일 관리에서 먼저 등록하세요</option>';
+  const partName = ctx.partName || getCurrentPartName();
+
+  // 품목 리스트 - 정규발주 카드와 동일한 스타일
+  const itemsHtml = emergencyDraft.items.map((it, idx) => `
+    <div style="border:1px solid var(--border);border-radius:16px;padding:12px 13px;background:var(--s2);display:grid;grid-template-columns:2fr 1fr 0.8fr auto;gap:8px;align-items:end;">
+      <div>
+        <div style="font-size:10px;font-family:var(--mono);color:var(--tdim);letter-spacing:.08em;margin-bottom:4px;">품목명</div>
+        <input value="${esc(it.name||'')}" oninput="updateEmergencyItem(${idx},'name',this.value)" placeholder="예: TSH reagent" style="width:100%;background:#fff;border:1px solid var(--border);border-radius:10px;padding:9px 11px;color:var(--text);font-size:13px;font-weight:600;box-sizing:border-box;">
+      </div>
+      <div>
+        <div style="font-size:10px;font-family:var(--mono);color:var(--tdim);letter-spacing:.08em;margin-bottom:4px;">LOT</div>
+        <input value="${esc(it.lot||'')}" oninput="updateEmergencyItem(${idx},'lot',this.value)" placeholder="LOT" style="width:100%;background:#fff;border:1px solid var(--border);border-radius:10px;padding:9px 11px;color:var(--text);font-size:13px;box-sizing:border-box;">
+      </div>
+      <div>
+        <div style="font-size:10px;font-family:var(--mono);color:var(--tdim);letter-spacing:.08em;margin-bottom:4px;">수량</div>
+        <input value="${esc(it.qty||'')}" oninput="updateEmergencyItem(${idx},'qty',this.value)" placeholder="수량" style="width:100%;background:#fff;border:1px solid var(--border);border-radius:10px;padding:9px 11px;color:var(--text);font-size:13px;text-align:center;box-sizing:border-box;">
+      </div>
+      <button type="button" data-emg-remove="${idx}" style="background:#fff1f1;color:#ef4444;border:1px solid #fecaca;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:700;cursor:pointer;height:36px;">삭제</button>
+    </div>`).join('');
+
+  _makePop(`
+    <div style="padding:15px 18px;border-bottom:1px solid var(--border);font-size:18px;font-weight:900;color:var(--text);">응급발주</div>
+    <div class="order-sheet" data-order-sheet="emergency">
+      <div class="order-sheet-title">간편 응급발주</div>
+      <div class="order-sheet-sub">현재 들어와 있는 <b>${esc(partName)}</b> 파트를 자동 적용했습니다.</div>
+      <div class="order-sheet-field" style="margin-top:12px;">
+        <label>현재 파트</label>
+        <input value="${esc(partName)}" readonly>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+        <div class="order-sheet-field">
+          <label>장비</label>
+          <select onchange="updateEmergencyField('device',this.value)">${devices.map(d=>`<option value="${esc(d.value)}" ${d.value===emergencyDraft.device?'selected':''}>${esc(d.label)}</option>`).join('')}</select>
+        </div>
+        <div class="order-sheet-field">
+          <label>업체</label>
+          <select onchange="updateEmergencyField('vendorId',this.value)">${vendorOpts}</select>
+        </div>
+        <div class="order-sheet-field">
+          <label>요청자</label>
+          <input value="${esc(emergencyDraft.requester||'')}" oninput="updateEmergencyField('requester',this.value)" placeholder="작성자">
+        </div>
+        <div class="order-sheet-field">
+          <label>요청일</label>
+          <input value="${new Date().toISOString().slice(0,10)}" readonly>
+        </div>
+      </div>
+      <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px;max-height:38vh;overflow:auto;">${itemsHtml}</div>
+      <button type="button" data-emg-action="add" style="margin-top:10px;width:100%;padding:11px;border:1px dashed var(--border);background:var(--s2);border-radius:12px;font-size:13px;font-weight:700;color:var(--tmid);cursor:pointer;">+ 품목 추가</button>
+      <div class="order-sheet-field" style="margin-top:12px;">
+        <label>요청 사유 / 전달 사항</label>
+        <textarea oninput="updateEmergencyField('note',this.value)" placeholder="응급 요청 사유, 전달 사항">${esc(emergencyDraft.note||'')}</textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px;">
+        <button class="btn" data-emg-action="save">저장</button>
+        <button class="btn" data-emg-action="print">출력</button>
+        <button class="btn primary" data-emg-action="mail">메일</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr;gap:8px;margin-top:8px;">
+        <button class="btn" onclick="closePersonPop()">닫기</button>
+      </div>
+    </div>`);
+}
+
+function _simpleEsc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+const ORDER_DEFAULT_VENDORS = [
+  {id:'v-hak', name:'학메디칼', email:'', cc:''},
+  {id:'v-default', name:'기본업체', email:'', cc:''}
+];
+function _vendorRowsHtml(){
+  return (window._vendorDraft||[]).map((v,idx)=>`
+    <div style="border:1px solid var(--border);border-radius:14px;padding:10px;background:var(--s2);display:flex;flex-direction:column;gap:8px;">
+      <input value="${_simpleEsc(v.name||'')}" oninput="updateVendorDraft(${idx},'name',this.value)" placeholder="업체명" style="width:100%;background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:13px;">
+      <input value="${_simpleEsc(v.email||'')}" oninput="updateVendorDraft(${idx},'email',this.value)" placeholder="대표 이메일" style="width:100%;background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:13px;">
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input value="${_simpleEsc(v.cc||'')}" oninput="updateVendorDraft(${idx},'cc',this.value)" placeholder="참조(CC)" style="flex:1;background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:13px;">
+        <button onclick="removeVendorDraft(${idx})" class="btn dbtn-del" style="padding:10px 12px;flex-shrink:0;">삭제</button>
+      </div>
+    </div>`).join('');
+}
+function renderVendorModal(){
+  _makePop(`<div style="padding:14px 16px;border-bottom:1px solid var(--border);font-size:15px;font-weight:900;color:var(--text);">업체 메일 관리</div><div style="padding:14px;display:flex;flex-direction:column;gap:10px;"><div style="font-size:12px;color:var(--tdim);line-height:1.6;">업체명, 메일, 참조(CC)를 등록해두면 정규발주/응급발주에서 바로 사용할 수 있습니다.</div>${_vendorRowsHtml()}<button class="btn" onclick="addVendorDraft()" style="width:100%;">+ 업체 추가</button><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><button class="btn" onclick="closePersonPop()">취소</button><button class="btn primary" onclick="saveVendorModal()">저장</button></div></div>`);
+}
+function openVendorModal(){
+  window._vendorDraft = JSON.parse(JSON.stringify(S.orderVendors||ORDER_DEFAULT_VENDORS));
+  renderVendorModal();
+}
+function updateVendorDraft(idx,key,val){ if(!window._vendorDraft || !_vendorDraft[idx]) return; _vendorDraft[idx][key]=val; }
+function addVendorDraft(){ window._vendorDraft = window._vendorDraft||[]; _vendorDraft.push({id:'v'+Date.now(), name:'', email:'', cc:''}); renderVendorModal(); }
+function removeVendorDraft(idx){ if(!window._vendorDraft || !_vendorDraft[idx]) return; _vendorDraft.splice(idx,1); if(!_vendorDraft.length) _vendorDraft=[{id:'v'+Date.now(), name:'', email:'', cc:''}]; renderVendorModal(); }
+function saveVendorModal(){
+  const clean = (window._vendorDraft||[]).map((v,i)=>({id:v.id||('v'+Date.now()+i), name:String(v.name||'').trim(), email:String(v.email||'').trim(), cc:String(v.cc||'').trim()})).filter(v=>v.name||v.email||v.cc);
+  if(!clean.length){ toast('업체를 1개 이상 입력해주세요','w'); return; }
+  S.orderVendors = clean; save(); if(window.fs_save) window.fs_save(); closePersonPop(); toast('업체 메일 저장 완료','s');
+}
+function _regularConfigRowsHtml(){
+  const reagents = (S.reagents||[]).slice().sort((a,b)=>String(a.name||'').localeCompare(String(b.name||'')));
+  const vendorOpts = (S.orderVendors||[]).map(v=>`<option value="${_simpleEsc(v.id)}">${_simpleEsc(v.name||'')}</option>`).join('');
+  return (window._regularConfigDraft||[]).map((cfg,idx)=>`
+    <div style="border:1px solid var(--border);border-radius:14px;padding:10px;background:var(--s2);display:flex;flex-direction:column;gap:8px;">
+      <select onchange="updateRegularConfigDraft(${idx},'reagentId',this.value)" style="width:100%;background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:13px;">
+        <option value="">시약 선택</option>
+        ${reagents.map(r=>`<option value="${_simpleEsc(r.id)}" ${r.id===cfg.reagentId?'selected':''}>${_simpleEsc(r.name)} · ${_simpleEsc(r.device||'')}</option>`).join('')}
+      </select>
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center;">
+        <input type="number" min="0" value="${_simpleEsc(cfg.monthlyUsage||'')}" oninput="updateRegularConfigDraft(${idx},'monthlyUsage',this.value)" placeholder="월 사용량" style="width:100%;background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:13px;">
+        <select onchange="updateRegularConfigDraft(${idx},'vendorId',this.value)" style="width:100%;background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:13px;">
+          <option value="">업체 선택</option>${vendorOpts.replace(/<option value="([^"]+)">([^<]+)<\/option>/g,(m,id,name)=>`<option value="${id}" ${id===cfg.vendorId?'selected':''}>${name}</option>`)}
+        </select>
+        <button onclick="removeRegularConfigDraft(${idx})" class="btn dbtn-del" style="padding:10px 12px;">삭제</button>
+      </div>
+    </div>`).join('');
+}
+function renderRegularConfigModal(){
+  _makePop(`<div style="padding:14px 16px;border-bottom:1px solid var(--border);font-size:15px;font-weight:900;color:var(--text);">정규발주 등록하기</div><div style="padding:14px;display:flex;flex-direction:column;gap:10px;"><div style="font-size:12px;color:var(--tdim);line-height:1.6;">시약별 월 사용량과 업체를 등록해두는 단계입니다.</div>${_regularConfigRowsHtml() || '<div style="padding:18px;border:1px dashed var(--border);border-radius:14px;background:var(--s2);font-size:12px;color:var(--tdim);text-align:center;">등록된 정규발주 기준이 없습니다.</div>'}<button class="btn" onclick="addRegularConfigDraft()" style="width:100%;">+ 기준 추가</button><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><button class="btn" onclick="closePersonPop()">취소</button><button class="btn primary" onclick="saveRegularConfigModal()">저장</button></div></div>`);
+}
+
+
+function _getRegularVendor(vendorId){
+  return (S.orderVendors||[]).find(v => v.id === vendorId) || {id:'', name:'', email:'', cc:''};
+}
+function _getRegularVendorName(vendorId){
+  const vendor = _getRegularVendor(vendorId);
+  return vendor ? (vendor.name || vendor.email || '-') : '-';
+}
+function _getRegularConfigRows(){
+  const ctx = getCurrentOrderContext();
+  const cfgs = Array.isArray(S.regularConfigs) ? S.regularConfigs : [];
+  return cfgs.map(cfg => {
+    const reagent = (S.reagents||[]).find(r => r.id === cfg.reagentId) || null;
+    const vendor = _getRegularVendor(cfg.vendorId);
+    const deviceText = String((reagent && reagent.device) || '');
+    let partMatch = true;
+    if(ctx.partId === 'chem'){
+      partMatch = /^(503|e801|b221|nx10n)/i.test(deviceText);
+    } else if(ctx.partId){
+      partMatch = deviceText.toLowerCase().includes(ctx.partId.toLowerCase()) || true;
+    }
+    return {
+      id: cfg.id || ('rc'+Date.now()),
+      reagentId: cfg.reagentId || '',
+      reagentName: reagent ? String(reagent.name||'').trim() : '',
+      device: reagent ? String(reagent.device||'').trim() : '',
+      monthlyUsage: parseInt(cfg.monthlyUsage)||0,
+      vendorId: cfg.vendorId || '',
+      vendorName: vendor.name || vendor.email || '-',
+      vendorEmail: vendor.email || '',
+      vendorCc: vendor.cc || '',
+      partMatch
+    };
+  }).filter(row => row.reagentName && row.monthlyUsage>0 && row.partMatch);
+}
+function _buildRegularOrderPayload(){
+  const ctx = getCurrentOrderContext();
+  const rows = _getRegularConfigRows();
+  const items = rows.map(r => ({
+    reagentId: r.reagentId,
+    name: r.reagentName,
+    device: r.device,
+    qty: r.monthlyUsage,
+    vendorId: r.vendorId,
+    vendorName: r.vendorName,
+    vendorEmail: r.vendorEmail,
+    vendorCc: r.vendorCc
+  }));
+  const emails = [...new Set(items.map(x=>x.vendorEmail).filter(Boolean))];
+  const ccs = [...new Set(items.map(x=>x.vendorCc).filter(Boolean))];
+  return {
+    savedAt: new Date().toISOString(),
+    partId: ctx.partId,
+    partName: ctx.partName,
+    items,
+    to: emails.join(','),
+    cc: ccs.join(',')
+  };
+}
+function openRegularQuick(){
+  const rows = _getRegularConfigRows();
+  const body = rows.length
+    ? `<div style="display:flex;flex-direction:column;gap:10px;max-height:48vh;overflow:auto;">${rows.map(row => `
+        <div style="border:1px solid var(--border);border-radius:16px;padding:12px 13px;background:var(--s2);display:grid;grid-template-columns:1.4fr .6fr;gap:10px;">
+          <div>
+            <div style="font-size:12px;font-weight:800;color:var(--text);">${esc(row.reagentName)}</div>
+            <div style="margin-top:5px;font-size:11px;color:var(--tdim);">${esc(row.device || '-')} · 업체 ${esc(row.vendorName)}</div>
+          </div>
+          <div style="text-align:right;align-self:center;">
+            <div style="font-size:10px;font-family:var(--mono);color:var(--tdim);letter-spacing:.08em;">발주수량</div>
+            <div style="margin-top:4px;font-size:20px;font-weight:900;color:var(--accent);">${row.monthlyUsage}</div>
+          </div>
+        </div>`).join('')}</div>`
+    : `<div style="padding:20px;border:1px dashed var(--border);border-radius:16px;background:var(--s2);font-size:12px;color:var(--tdim);line-height:1.7;text-align:center;">정규발주 기준이 아직 없습니다.<br>더보기에서 <b>정규발주 등록하기</b>를 먼저 입력해주세요.</div>`;
+
+  _makePop(`
+    <div style="padding:15px 18px;border-bottom:1px solid var(--border);font-size:18px;font-weight:900;color:var(--text);">정규발주</div>
+    <div class="order-sheet">
+      <div class="order-sheet-title">등록 기준 불러오기</div>
+      <div class="order-sheet-sub">더보기에서 저장한 월 사용량 기준으로 정규발주 목록을 만듭니다.</div>
+      <div class="order-sheet-field" style="margin-top:12px;">
+        <label>현재 파트</label>
+        <input value="${esc(getCurrentPartName())}" readonly>
+      </div>
+      <div style="margin-top:12px;">${body}</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px;">
+        <button class="btn" onclick="saveRegularOrder()">저장</button>
+        <button class="btn" onclick="printRegularOrder()">출력</button>
+        <button class="btn" onclick="emailRegularOrder()">메일</button>
+        <button class="btn" onclick="exportRegularOrderExcel()">엑셀</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+        <button class="btn" onclick="closePersonPop()">닫기</button>
+        <button class="btn primary" onclick="openRegularConfigModal()">기준 수정</button>
+      </div>
+    </div>`);
+}
+
+function openRegularConfigModal(){ window._regularConfigDraft = JSON.parse(JSON.stringify(S.regularConfigs||[])); renderRegularConfigModal(); }
+function updateRegularConfigDraft(idx,key,val){ if(!window._regularConfigDraft || !_regularConfigDraft[idx]) return; _regularConfigDraft[idx][key]=val; }
+function addRegularConfigDraft(){ window._regularConfigDraft = window._regularConfigDraft||[]; _regularConfigDraft.push({id:'rc'+Date.now(), reagentId:'', monthlyUsage:'', vendorId:''}); renderRegularConfigModal(); }
+function removeRegularConfigDraft(idx){ if(!window._regularConfigDraft || !_regularConfigDraft[idx]) return; _regularConfigDraft.splice(idx,1); renderRegularConfigModal(); }
+function saveRegularConfigModal(){
+  const rows = (window._regularConfigDraft||[]).map((x,i)=>({id:x.id||('rc'+Date.now()+i), reagentId:String(x.reagentId||''), monthlyUsage:parseInt(x.monthlyUsage)||0, vendorId:String(x.vendorId||'')})).filter(x=>x.reagentId && x.monthlyUsage>0);
+  if(!rows.length){ toast('시약과 월 사용량을 1개 이상 등록해주세요','w'); return; }
+  S.regularConfigs = rows; save(); if(window.fs_save) window.fs_save(); closePersonPop(); toast('정규발주 기준 저장 완료','s');
+}
+function saveRegularOrder(){
+  const payload = _buildRegularOrderPayload();
+  if(!payload.items.length){ toast('정규발주 기준이 없습니다','w'); return; }
+  S.regularOrders = Array.isArray(S.regularOrders) ? S.regularOrders : [];
+  S.regularOrders.unshift(payload);
+  save(); if(window.fs_save) window.fs_save();
+  toast('정규발주 저장 완료','s');
+}
+function printRegularOrder(){
+  const payload = _buildRegularOrderPayload();
+  if(!payload.items.length){ toast('출력할 정규발주 항목이 없습니다','w'); return; }
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>정규발주서</title><style>body{font-family:Arial,'Noto Sans KR',sans-serif;padding:24px;color:#111}h1{font-size:22px;margin:0 0 8px}table{width:100%;border-collapse:collapse;margin-top:16px}th,td{border:1px solid #cfd8e3;padding:8px;font-size:13px}th{background:#f5f8fc}.meta{margin:8px 0 14px;font-size:13px;line-height:1.7}.sign{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:28px}.box{border:1px solid #cfd8e3;height:74px;padding:8px;font-size:12px}@media print{body{padding:16px}}</style></head><body><h1>정규발주서</h1><div class="meta">일자: ${payload.savedAt.slice(0,10)}<br>파트: ${esc(payload.partName)}</div><table><thead><tr><th>시약명</th><th>장비</th><th>발주수량</th><th>업체</th></tr></thead><tbody>${payload.items.map(it=>`<tr><td>${esc(it.name)}</td><td>${esc(it.device||'-')}</td><td>${esc(it.qty)}</td><td>${esc(it.vendorName||'-')}</td></tr>`).join('')}</tbody></table><div class="sign"><div class="box">작성</div><div class="box">확인</div><div class="box">승인</div></div></body></html>`;
+
+  try{
+    let iframe = document.getElementById('regular-print-frame');
+    if(iframe) iframe.remove();
+    iframe = document.createElement('iframe');
+    iframe.id = 'regular-print-frame';
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.style.opacity = '0';
+    iframe.setAttribute('aria-hidden','true');
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(html);
+    doc.close();
+
+    const runPrint = () => {
+      try{
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+      }catch(e){
+        toast('출력 창을 여는 중 문제가 발생했어요','w');
+      }
+    };
+
+    if(iframe.contentWindow.document.readyState === 'complete'){
+      setTimeout(runPrint, 120);
+    }else{
+      iframe.onload = () => setTimeout(runPrint, 120);
+    }
+
+    setTimeout(() => {
+      const old = document.getElementById('regular-print-frame');
+      if(old) old.remove();
+    }, 60000);
+  }catch(e){
+    toast('출력 기능 실행 중 문제가 발생했어요','w');
+    console.error(e);
+  }
+}
+function emailRegularOrder(){
+  const payload = _buildRegularOrderPayload();
+  if(!payload.items.length){ toast('메일로 보낼 정규발주 항목이 없습니다','w'); return; }
+  const lines = [
+    '정규발주서','',`일자: ${payload.savedAt.slice(0,10)}`,`파트: ${payload.partName}`,'','[품목]',
+    ...payload.items.map(it => `- ${it.name} / 장비: ${it.device || '-'} / 수량: ${it.qty} / 업체: ${it.vendorName || '-'}`)
+  ];
+  const mailto = `mailto:${encodeURIComponent(payload.to)}?cc=${encodeURIComponent(payload.cc)}&subject=${encodeURIComponent(`[정규발주] ${payload.partName}`)}&body=${encodeURIComponent(lines.join('\n'))}`;
+  location.href = mailto;
+}
+function exportRegularOrderExcel(){
+  const payload = _buildRegularOrderPayload();
+  if(!payload.items.length){ toast('엑셀로 내보낼 정규발주 항목이 없습니다','w'); return; }
+  if(typeof XLSX === 'undefined'){ toast('엑셀 라이브러리 로딩 중입니다','w'); return; }
+  const rows = payload.items.map(it => ({파트:payload.partName, 시약명:it.name, 장비:it.device||'', 발주수량:it.qty, 업체:it.vendorName||''}));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '정규발주');
+  XLSX.writeFile(wb, `정규발주-${payload.partName}-${payload.savedAt.slice(0,10)}.xlsx`);
+}
+function printInventorySheet(){
+  const headers = ['시약명','장비','카테고리','LOT(최근)','최근입고일','총입고수량','유효기간'];
+  const dataRows = [];
+  (S.reagents||[]).forEach(rg => {
+    const inbounds = (S.records||[])
+      .filter(r=>r.reagentId===rg.id && r.type==='입고')
+      .sort((a,b)=>new Date(b.registeredAt)-new Date(a.registeredAt));
+    if(!inbounds.length) return;
+    const last = inbounds[0];
+    const devParts = String(rg.device||'').split('-');
+    dataRows.push([
+      rg.name||'',
+      devParts[0]||'',
+      devParts.slice(1).join('-')||'',
+      last.lot||'',
+      last.registeredAt||'',
+      inbounds.reduce((s,r)=>s+(parseInt(r.qty)||1),0),
+      last.expiry||''
+    ]);
+  });
+  if(!dataRows.length){ toast('출력할 시약 데이터가 없습니다','w'); return; }
+  dataRows.sort((a,b)=> (
+    String(a[1]).localeCompare(String(b[1]),'ko') ||
+    String(a[2]).localeCompare(String(b[2]),'ko') ||
+    String(a[0]).localeCompare(String(b[0]),'ko')
+  ));
+  const today = tod();
+  const rowHtml = dataRows.map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td><td>${esc(r[3])}</td><td>${esc(r[4])}</td><td>${esc(r[5])}</td><td>${esc(r[6])}</td></tr>`).join('');
+  const html = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>시약 리스트 출력</title><style>
+    @page{size:A4 landscape; margin:4mm;}
+    html,body{margin:0;padding:0;background:#fff;font-family:'Noto Sans KR',sans-serif;color:#111;}
+    *{box-sizing:border-box;}
+    .page{width:289mm; margin:0 auto;}
+    .title{font-size:16px;font-weight:800;text-align:center;margin:0 0 2mm;letter-spacing:-0.2px;}
+    .date{font-size:9px;text-align:right;margin:0 0 1.5mm;color:#444;}
+    table{width:100%;border-collapse:collapse;table-layout:fixed;}
+    th,td{border:1px solid #222;padding:1mm 1.1mm;font-size:7.4px;line-height:1.15;vertical-align:middle;word-break:break-word;}
+    th{font-weight:700;text-align:center;background:#f5f5f5;white-space: normal;}
+    td:nth-child(1),th:nth-child(1){width:43%;text-align:left;word-break:break-all;}
+    td:nth-child(2),th:nth-child(2){width:7%;text-align:center;white-space: normal;}
+    td:nth-child(3),th:nth-child(3){width:9%;text-align:center;white-space: normal;}
+    td:nth-child(4),th:nth-child(4){width:13%;text-align:center;white-space: normal;}
+    td:nth-child(5),th:nth-child(5){width:11%;text-align:center;white-space: normal;}
+    td:nth-child(6),th:nth-child(6){width:8%;text-align:center;white-space: normal;}
+    td:nth-child(7),th:nth-child(7){width:9%;text-align:center;white-space: normal;}
+    .sign-wrap{display:flex;justify-content:flex-end;margin-top:2mm;}
+    .sign{border-collapse:collapse;}
+    .sign td{border:1px solid #222;width:23mm;height:8mm;font-size:8px;text-align:center;padding:0;}
+    .note{font-size:7px;color:#555;margin-top:1.2mm;}
+  </style></head><body><div class="page"><div class="title">시약 리스트</div><div class="date">${today}</div><table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rowHtml}</tbody></table><div class="sign-wrap"><table class="sign"><tr><td>담당</td><td>확인</td><td>비고</td></tr><tr><td></td><td></td><td></td></tr></table></div><div class="note">엑셀 내보내기와 동일한 항목으로 출력됩니다.</div></div><script>window.onload=function(){setTimeout(function(){window.print();},120);};<\/script></body></html>`;
+  const w = window.open('', '_blank'); if(!w){ toast('팝업 차단을 해제해주세요','w'); return; } w.document.open(); w.document.write(html); w.document.close();
+}
 
 // ══════════════════════════════════════
 function exportJSON(){
@@ -3817,10 +4794,11 @@ function enterPart(partId) {
   if(partId === 'chem') {
     document.getElementById('nav-chem').style.display = '';
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-    document.getElementById('pg-503').classList.add('active');
+    document.getElementById('pg-alert').classList.add('active');
     document.querySelectorAll('#nav-chem .nav-item').forEach(b=>b.classList.remove('active'));
-    const b = document.querySelector('#nav-chem [data-pg="503"]');
+    const b = document.querySelector('#nav-chem [data-pg="alert"]');
     if(b) b.classList.add('active');
+    renderAlert();
   } else {
     _currentPart = partId;
     const devices = (S.customDevices||[]).filter(d=>d.partId===partId);
