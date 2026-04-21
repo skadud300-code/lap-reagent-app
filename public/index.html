@@ -276,7 +276,11 @@ tr.lot-new-grp .cgrp{background:rgba(249,115,22,.1)!important;}
 
 /* Modal */
 .mbg{position:fixed;inset:0;background:rgba(26,29,35,.6);display:flex;align-items:flex-end;justify-content:center;z-index:300;backdrop-filter:blur(3px);}
-.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px 16px 0 0;padding:24px;width:100%;max-width:480px;box-shadow:0 -8px 32px rgba(0,0,0,.15);}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px 16px 0 0;padding:24px;width:100%;max-width:480px;max-height:min(82vh,calc(100dvh - 24px));overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;box-shadow:0 -8px 32px rgba(0,0,0,.15);} 
+#add-modal{align-items:flex-end;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-top:12px;padding-bottom:12px;overscroll-behavior:contain;}
+#add-modal .modal{padding-bottom:max(24px,calc(env(safe-area-inset-bottom,0px) + 24px));}
+@media (max-width:640px){#add-modal .modal{max-height:calc(100dvh - 12px);}}
+
 .modal-handle{width:40px;height:4px;background:var(--b2);border-radius:2px;margin:0 auto 18px;}
 .modal-ico{font-size:32px;margin-bottom:8px;}
 .modal-title{font-size:16px;font-weight:700;margin-bottom:6px;}
@@ -802,6 +806,12 @@ body table[data-print-ledger="1"] th:last-child, body table[data-print-ledger="1
   pointer-events:auto !important;
 }
 
+
+/* unmatched register list mobile scroll fix */
+#dv-list-wrap,
+#dv-list-wrap *{touch-action:pan-y;}
+#dv-list-wrap button{ -webkit-tap-highlight-color:transparent; }
+
 </style>
 <script>
   var pdfjsScript = document.createElement('script');
@@ -841,8 +851,13 @@ body table[data-print-ledger="1"] th:last-child, body table[data-print-ledger="1
       const data = snap.data();
       if(!window._fsLastSave || data._savedAt > window._fsLastSave) {
         window._fsLastSave = data._savedAt;
-        S.reagents = data.reagents;
+        S.reagents = data.reagents || [];
         S.records = data.records || [];
+        if(data.customDevices) S.customDevices = data.customDevices;
+        if(data.partPersons) S.partPersons = data.partPersons;
+        if(data.regularConfigs) S.regularConfigs = data.regularConfigs;
+        if(data.orderVendors) S.orderVendors = data.orderVendors;
+        if(data.emergencyOrders) S.emergencyOrders = data.emergencyOrders;
         localStorage.setItem('rms4', JSON.stringify(S));
         if(typeof renderAll === 'function') renderAll();
       }
@@ -874,6 +889,11 @@ body table[data-print-ledger="1"] th:last-child, body table[data-print-ledger="1
     _REF.set({
       reagents: S.reagents,
       records: S.records,
+      customDevices: S.customDevices || [],
+      partPersons: S.partPersons || {},
+      regularConfigs: S.regularConfigs || [],
+      orderVendors: S.orderVendors || [],
+      emergencyOrders: S.emergencyOrders || [],
       _savedAt: savedAt
     }).then(() => {
       const t = new Date(savedAt);
@@ -1432,24 +1452,22 @@ body table[data-print-ledger="1"] th:last-child, body table[data-print-ledger="1
 </div>
 <!-- ADD REAGENT MODAL -->
 <div class="mbg" id="add-modal" style="display:none" onclick="if(event.target===this)closeAdd()">
-  <div class="modal">
+  <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-handle"></div>
     <div class="modal-ico">🧪</div>
     <div class="modal-title">새 시약 추가</div>
+    <div class="modal-desc" id="new-add-context" style="margin-bottom:10px;">현재 파트와 장비 구분을 확인한 뒤 추가하세요.</div>
+    <div class="field" style="margin-bottom:8px;">
+      <label>파트</label>
+      <select id="new-part" onchange="onAddPartChange()"></select>
+    </div>
     <div class="field" style="margin-bottom:8px;">
       <label>시약명</label>
       <input type="text" id="new-name" placeholder="예: BIL-T GEN.3 1050T">
     </div>
-    <div class="field" style="margin-bottom:8px;">
-      <label>장비 · 카테고리</label>
-      <select id="new-device">
-        <option value="503-주시약">cobas 503 — 주시약</option>
-        <option value="503-소모">cobas 503 — 소모시약</option>
-        <option value="503-cal">cobas 503 — CAL&amp;QC</option>
-        <option value="e801-주시약">cobas e801 — 주시약</option>
-        <option value="e801-소모">cobas e801 — 소모시약</option>
-        <option value="e801-cal">cobas e801 — CAL&amp;QC</option>
-      </select>
+    <div class="field" id="new-device-field" style="margin-bottom:8px;">
+      <label>장비 · 구분</label>
+      <select id="new-device"></select>
     </div>
     <div class="field" style="margin-bottom:14px;">
       <label>보관조건</label>
@@ -1518,7 +1536,7 @@ body table[data-print-ledger="1"] th:last-child, body table[data-print-ledger="1
           </div>
         </div>
       </div>
-      <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px;">
+      <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;padding:12px 12px 20px;">
         <!-- 엑셀 업로드 -->
         <div style="margin-bottom:8px;position:relative;overflow:hidden;border-radius:10px;">
           <div style="width:100%;padding:11px;border-radius:10px;border:1px dashed #22c55e;background:var(--s2);color:#22c55e;font-size:13px;font-weight:700;text-align:center;box-sizing:border-box;">📊 엑셀 업로드 (.xlsx)</div>
@@ -1911,8 +1929,18 @@ function doRegister(){
 // ══════════════════════════════════════
 // RENDER ALL LEDGERS
 // ══════════════════════════════════════
+function _allDeviceKeys(){
+  const base = [...DEVS];
+  const custom = (S.customDevices||[]).flatMap(d => ([
+    `custom-${d.id}-주시약`,
+    `custom-${d.id}-소모`,
+    `custom-${d.id}-cal`
+  ]));
+  return [...base, ...custom];
+}
+
 function renderAll(){
-  DEVS.forEach(dv=>{ renderPills(dv); renderLedger(dv); });
+  _allDeviceKeys().forEach(dv=>{ renderPills(dv); renderLedger(dv); });
   updateStats();
 }
 
@@ -1934,11 +1962,15 @@ function clearReagentSearch(pageKey){
   }
   _toggleReagentSearchClear(pageKey);
 }
-function _currentChemDvByPageKey(pageKey){
+function _currentDvByPageKey(pageKey){
   if(pageKey === '503') return curCat503;
   if(pageKey === 'e801') return curCate801;
   if(pageKey === 'b221') return 'b221-주시약';
   if(pageKey === 'nx10n') return 'nx10n-주시약';
+  if(String(pageKey||'').startsWith('custom-')){
+    const activeCatBtn = document.querySelector(`#pg-${pageKey} .cattab.act`);
+    return activeCatBtn ? activeCatBtn.getAttribute('data-cat') : `${pageKey}-주시약`;
+  }
   return '503-주시약';
 }
 function _closeReagentSearch(pageKey){
@@ -1946,7 +1978,7 @@ function _closeReagentSearch(pageKey){
   if(box) box.classList.remove('show');
 }
 function _closeAllReagentSearch(){
-  ['503','e801','b221','nx10n'].forEach(_closeReagentSearch);
+  document.querySelectorAll('.reagent-search-results').forEach(el => el.classList.remove('show'));
 }
 function _selectReagentFromSearch(pageKey, dv, reagentId){
   const input = document.getElementById(`search-${pageKey}`);
@@ -1968,7 +2000,7 @@ function onReagentSearchInput(pageKey, rawValue){
     box.innerHTML = '';
     return;
   }
-  const dv = _currentChemDvByPageKey(pageKey);
+  const dv = _currentDvByPageKey(pageKey);
   const list = S.reagents
     .filter(r => r.device === dv)
     .map(r => ({ id:r.id, name:String(r.name||'') }))
@@ -2263,26 +2295,190 @@ function delReagent(id){
 // ══════════════════════════════════════
 // ADD REAGENT MODAL
 // ══════════════════════════════════════
-function showAddReagent(dv){
-  document.getElementById('new-device').value=dv||'503-주시약';
-  document.getElementById('add-modal').style.display='flex';
-  setTimeout(()=>document.getElementById('new-name').focus(),100);
+function getDeviceLabelForAddModal(deviceKey){
+  const map = {
+    '503-주시약':'cobas 503 — 주시약',
+    '503-소모':'cobas 503 — 소모시약',
+    '503-cal':'cobas 503 — CAL&QC',
+    'e801-주시약':'cobas e801 — 주시약',
+    'e801-소모':'cobas e801 — 소모시약',
+    'e801-cal':'cobas e801 — CAL&QC',
+    'b221-주시약':'cobas b221 — 주시약',
+    'nx10n-주시약':'NX10N — 주시약'
+  };
+  if(map[deviceKey]) return map[deviceKey];
+  const match = String(deviceKey||'').match(/^custom-(.+?)-(주시약|소모|cal)$/);
+  if(match){
+    const dev = (S.customDevices||[]).find(d=>d.id===match[1]);
+    const devName = dev ? dev.name : match[1];
+    const catName = match[2]==='소모' ? '소모시약' : (match[2]==='cal' ? 'CAL&QC' : '주시약');
+    return devName + ' — ' + catName;
+  }
+  return deviceKey || '';
 }
-function closeAdd(){document.getElementById('add-modal').style.display='none';}
+function getCurrentAddDevice(dv){
+  if(dv) return dv;
+  if(_currentPart){
+    const customNav = document.querySelector('#nav-custom .nav-item.active[data-dev]');
+    const activeDevId = customNav ? customNav.getAttribute('data-dev') : '';
+    const activeCatBtn = activeDevId ? document.querySelector(`#pg-custom-${activeDevId} .cattab.act`) : null;
+    return activeCatBtn ? activeCatBtn.getAttribute('data-cat') : (activeDevId ? `custom-${activeDevId}-주시약` : '');
+  }
+  const chemNav = document.querySelector('#nav-chem .nav-item.active');
+  const pgKey = chemNav ? chemNav.getAttribute('data-pg') : '503';
+  if(pgKey === '503') return curCat503 || '503-주시약';
+  if(pgKey === 'e801') return curCate801 || 'e801-주시약';
+  if(pgKey === 'b221') return 'b221-주시약';
+  if(pgKey === 'nx10n') return 'nx10n-주시약';
+  return '503-주시약';
+}
+function buildAddDeviceOptions(selectedDevice){
+  const select = document.getElementById('new-device');
+  if(!select) return;
+  let options = [];
+  if(_currentPart){
+    const devices = (S.customDevices||[]).filter(d=>d.partId===_currentPart);
+    devices.forEach(dev=>{
+      const prefix = `custom-${dev.id}`;
+      options.push({value:`${prefix}-주시약`, label:`${dev.name} — 주시약`});
+      options.push({value:`${prefix}-소모`, label:`${dev.name} — 소모시약`});
+      options.push({value:`${prefix}-cal`, label:`${dev.name} — CAL&QC`});
+    });
+  } else {
+    options = [
+      {value:'503-주시약', label:'cobas 503 — 주시약'},
+      {value:'503-소모', label:'cobas 503 — 소모시약'},
+      {value:'503-cal', label:'cobas 503 — CAL&QC'},
+      {value:'e801-주시약', label:'cobas e801 — 주시약'},
+      {value:'e801-소모', label:'cobas e801 — 소모시약'},
+      {value:'e801-cal', label:'cobas e801 — CAL&QC'},
+      {value:'b221-주시약', label:'cobas b221 — 주시약'},
+      {value:'nx10n-주시약', label:'NX10N — 주시약'}
+    ];
+  }
+  if(!options.length && selectedDevice){
+    options.push({value:selectedDevice, label:getDeviceLabelForAddModal(selectedDevice)});
+  }
+  select.innerHTML = options.map(opt=>`<option value="${opt.value}">${opt.label}</option>`).join('');
+  if(options.some(opt=>opt.value===selectedDevice)) select.value = selectedDevice;
+}
+function getAddModalPartName(partId){
+  if(partId === 'chem') return '화학';
+  return (PART_NAMES_KO && PART_NAMES_KO[partId]) || (PARTS[partId] && PARTS[partId].name) || '사용자 파트';
+}
+function buildAddPartOptions(selectedPart){
+  const select = document.getElementById('new-part');
+  if(!select) return;
+  const parts = [{value:'chem', label:'화학'}].concat(Object.keys(PARTS).map(key => ({value:key, label:getAddModalPartName(key)})));
+  select.innerHTML = parts.map(opt=>`<option value="${opt.value}">${opt.label}</option>`).join('');
+  select.value = parts.some(opt=>opt.value===selectedPart) ? selectedPart : 'chem';
+}
+function onAddPartChange(){
+  const partSelect = document.getElementById('new-part');
+  const contextEl = document.getElementById('new-add-context');
+  const selectedPart = partSelect ? String(partSelect.value || 'chem') : 'chem';
+  buildAddDeviceOptions('', selectedPart);
+  const deviceSelect = document.getElementById('new-device');
+  const selectedDevice = deviceSelect ? String(deviceSelect.value || '') : '';
+  if(contextEl) contextEl.textContent = `현재 파트: ${getAddModalPartName(selectedPart)} · 현재 선택: ${getDeviceLabelForAddModal(selectedDevice)}`;
+}
+function showAddReagent(dv){
+  const storageSelect = document.getElementById('new-storage');
+  const nameInput = document.getElementById('new-name');
+  const partSelect = document.getElementById('new-part');
+  const contextEl = document.getElementById('new-add-context');
+  const selectedDevice = getCurrentAddDevice(dv);
+  const selectedPart = _currentPart || (String(selectedDevice||'').startsWith('custom-') ? (((S.customDevices||[]).find(d=>selectedDevice.startsWith(`custom-${d.id}-`))||{}).partId || 'chem') : 'chem');
+  const partName = getAddModalPartName(selectedPart);
+
+  if(nameInput) nameInput.value = '';
+  if(storageSelect) storageSelect.value = '냉장';
+  buildAddPartOptions(selectedPart);
+  if(partSelect) partSelect.value = selectedPart;
+  buildAddDeviceOptions(selectedDevice, selectedPart);
+  if(contextEl) contextEl.textContent = `현재 파트: ${partName} · 현재 선택: ${getDeviceLabelForAddModal(selectedDevice)}`;
+
+  const addModal = document.getElementById('add-modal');
+  if(addModal){
+    addModal.style.display='flex';
+    addModal.scrollTop = 0;
+  }
+  try{
+    const nameEl = document.getElementById('new-name');
+    if(nameEl) nameEl.blur();
+    if(document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur();
+  }catch(e){}
+}
+function closeAdd(){
+  document.getElementById('add-modal').style.display='none';
+  if(_dvPendingRegisterName){
+    const delivery = document.getElementById('delivery-modal');
+    if(delivery) delivery.style.display = 'flex';
+    if(typeof dvSetMode === 'function') dvSetMode('parse');
+  }
+  _dvPendingRegisterName = '';
+}
 function saveReagent(){
   const name=document.getElementById('new-name').value.trim();
   if(!name){toast('시약명을 입력하세요','w');return;}
-  const device=document.getElementById('new-device').value;
+
   const storage=document.getElementById('new-storage').value;
+  const partSelect = document.getElementById('new-part');
+  const selectedPart = partSelect ? String(partSelect.value||'chem').trim() : 'chem';
+  const deviceSelect = document.getElementById('new-device');
+  let device = deviceSelect ? String(deviceSelect.value||'').trim() : '';
+
+  if(!device) device = getCurrentAddDevice();
+
+  if(!device){ toast('현재 장비 정보를 찾을 수 없어요','w'); return; }
+
+  const exists = S.reagents.some(r =>
+    String(r.device||'') === String(device||'') &&
+    String(r.name||'').trim().toLowerCase() === name.toLowerCase()
+  );
+  if(exists){ toast('같은 장비에 동일한 시약명이 이미 있어요','w'); return; }
+
+  if(selectedPart && selectedPart !== (_currentPart || 'chem')) _currentPart = selectedPart === 'chem' ? null : selectedPart;
+
   const r={id:uid(),name,device,storage};
-  S.reagents.push(r);curSelReagent[device]=r.id;
-  save();renderAll();closeAdd();
+  S.reagents.push(r);
+  curSelReagent[device]=r.id;
+  save(); renderAll(); closeAdd();
+
   document.getElementById('new-name').value='';
   toast(`${name} 추가됨`,'s');
-  // navigate to that device page
-  const pgKey=device.startsWith('503')?'503':'e801';
-  const navBtn=document.querySelector(`.nav-item[data-pg="${pgKey}"]`);
-  if(navBtn) goPage(pgKey,navBtn);
+
+  if(_dvPendingRegisterName){
+    const pendingRawName = _dvPendingRegisterName;
+    const refreshResult = dvRefreshParsedMatches(pendingRawName, r);
+    const delivery = document.getElementById('delivery-modal');
+    if(delivery) delivery.style.display = 'flex';
+    if(typeof dvSetMode === 'function') dvSetMode('parse');
+
+    if(refreshResult && refreshResult.matchedNow > 0){
+      toast(`등록 후 ${refreshResult.matchedNow}개 매칭됨`,'s');
+    }else{
+      toast('등록됨, 하지만 이 항목은 아직 미매핑으로 남아있어요','w');
+    }
+    _dvPendingRegisterName = '';
+  }
+
+  if(device.startsWith('custom-')){
+    const match = device.match(/^custom-(.+?)-(주시약|소모|cal)$/);
+    const devId = match ? match[1] : '';
+    if(devId){
+      const navBtn=document.querySelector(`#nav-custom .nav-item[data-dev="${devId}"]`);
+      if(navBtn) goCustomDevice(devId, navBtn);
+      setTimeout(() => {
+        const btn = document.querySelector(`#pg-custom-${devId} .cattab[data-cat="${device}"]`);
+        if(btn) setCatCustom(btn, `custom-${devId}`);
+      }, 30);
+    }
+  } else {
+    const pgKey = device.startsWith('503') ? '503' : device.startsWith('e801') ? 'e801' : device.startsWith('b221') ? 'b221' : 'nx10n';
+    const navBtn=document.querySelector(`#nav-chem .nav-item[data-pg="${pgKey}"]`);
+    if(navBtn) goPage(pgKey, navBtn);
+  }
 }
 
 // ══════════════════════════════════════
@@ -2778,6 +2974,43 @@ function _makePop(html){
 }
 
 // 개봉자 변경
+
+function getCustomDeviceIdFromKey(device){
+  const dv = String(device||'');
+  if(!dv.startsWith('custom-')) return '';
+  return dv
+    .replace(/^custom-/, '')
+    .replace(/-(주시약|소모|cal)$/,'');
+}
+
+function getPartIdForDevice(device){
+  const dv = String(device||'');
+  if(dv.startsWith('503')) return 'chem';
+  if(dv.startsWith('e801') || dv.startsWith('e402')) return 'immuno';
+  if(dv.startsWith('b221')) return 'hema';
+  if(dv.startsWith('nx10n')) return 'urine';
+  if(dv.startsWith('custom-')){
+    const devId = getCustomDeviceIdFromKey(dv);
+    const custom = (S.customDevices||[]).find(d=>d.id===devId);
+    return custom && custom.partId ? custom.partId : 'chem';
+  }
+  return 'chem';
+}
+function getPersonsForPart(partId){
+  if(!S.partPersons) S.partPersons = {};
+  const saved = Array.isArray(S.partPersons[partId]) ? S.partPersons[partId].filter(Boolean) : [];
+  if(partId === 'chem'){
+    return saved.length ? saved : [...PERSONS];
+  }
+  return saved;
+}
+function ensurePersonsForPart(partId){
+  const persons = getPersonsForPart(partId);
+  if(persons.length) return persons;
+  toast((PART_NAMES_KO[partId]||partId)+' 담당자를 먼저 등록하세요','w');
+  return null;
+}
+
 function quickSetPerson(recId){
   const rec = S.records.find(r=>r.id===recId);
   if(!rec) return;
@@ -2786,7 +3019,11 @@ function quickSetPerson(recId){
   const curType = rec.type||'';
   window._editRecId = recId;
 
-  const personOpts = PERSONS.map(p=>
+  const partId = getPartIdForDevice(rec.device||'');
+  const persons = ensurePersonsForPart(partId);
+  if(!persons) return;
+
+  const personOpts = persons.map(p=>
     `<option value="${p}" ${curPerson===p?'selected':''}>${p}</option>`
   ).join('');
 
@@ -2798,6 +3035,7 @@ function quickSetPerson(recId){
   _makePop(
     `<div style="padding:8px 16px;font-size:11px;color:var(--tdim);border-bottom:1px solid var(--border);">개봉자/장비 수정</div>`
     +`<div style="padding:10px 12px;display:flex;flex-direction:column;gap:8px;border-bottom:1px solid var(--border);">
+        <div style="font-size:11px;color:var(--tdim);">${PART_NAMES_KO[partId]||partId} 담당자</div>
         <select id="qp-person" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:7px 8px;color:var(--text);font-size:13px;">
           <option value="">-- 개봉자 --</option>${personOpts}
         </select>
@@ -2888,29 +3126,26 @@ function quickOpenNew(reagentId, lot, expiry, device, rowIdx, ibId){
   const header = `<div style="padding:8px 16px;font-size:11px;color:var(--tdim);border-bottom:1px solid var(--border);">개봉 등록</div>`;
   const popStyle = `padding:12px 20px;font-size:13px;font-weight:600;cursor:pointer;border-bottom:1px solid var(--border);color:var(--text)`;
 
-  // 커스텀 장비인지 확인 - 서브장비 목록 가져오기
   let customDev = null;
   if(device.startsWith('custom-')) {
-    const devId = device.replace('custom-','');
+    const devId = getCustomDeviceIdFromKey(device);
     customDev = (S.customDevices||[]).find(d=>d.id===devId);
   }
 
-  // 담당자 목록
-  const partId = customDev ? customDev.partId : 'chem';
-  const persons = (S.partPersons && S.partPersons[partId]) || PERSONS;
+  const partId = customDev && customDev.partId ? customDev.partId : getPartIdForDevice(device);
+  const persons = ensurePersonsForPart(partId);
+  if(!persons) return;
 
   if(is503){
-    // 화학: main/sub × 담당자
     let items = '';
     persons.forEach(p => {
       items += `<div onclick="doQuickOpen('${reagentId}','${lot}','${expiry}','${device}','개봉M','${p}','${ibId}','', '${slotArg}')" style="${popStyle}">main - ${p}</div>`;
     });
-    persons.forEach(p => {
-      items += `<div onclick="doQuickOpen('${reagentId}','${lot}','${expiry}','${device}','개봉S','${p}','${ibId}','', '${slotArg}')" style="${popStyle}">sub - ${p}</div>`;
+    persons.forEach((p, idx) => {
+      items += `<div onclick="doQuickOpen('${reagentId}','${lot}','${expiry}','${device}','개봉S','${p}','${ibId}','', '${slotArg}')" style="${popStyle}${idx===persons.length-1?'border-bottom:none;':''}">sub - ${p}</div>`;
     });
     _makePop(header + items);
   } else if(customDev && customDev.subs && customDev.subs.length > 0) {
-    // 커스텀 장비 - 서브장비 있음: 서브장비 × 담당자
     let items = '';
     customDev.subs.forEach(sub => {
       persons.forEach((p,pi) => {
@@ -2920,10 +3155,9 @@ function quickOpenNew(reagentId, lot, expiry, device, rowIdx, ibId){
     });
     _makePop(header + items);
   } else {
-    // 일반 커스텀 또는 기타: 담당자만
     let items = '';
-    persons.forEach(p => {
-      items += `<div onclick="doQuickOpen('${reagentId}','${lot}','${expiry}','${device}','개봉M','${p}','${ibId}','', '${slotArg}')" style="${popStyle}">${p}</div>`;
+    persons.forEach((p, idx) => {
+      items += `<div onclick="doQuickOpen('${reagentId}','${lot}','${expiry}','${device}','개봉M','${p}','${ibId}','', '${slotArg}')" style="${popStyle}${idx===persons.length-1?'border-bottom:none;':''}">${p}</div>`;
     });
     _makePop(header + items);
   }
@@ -3238,16 +3472,25 @@ let emergencyDraft = { device:'', vendorId:'', requester:'', note:'', items:[{na
 function getCurrentOrderContext(){
   if(_currentPart){
     const list = (S.customDevices||[]).filter(d => d.partId === _currentPart).map(d => ({ value:d.id, label:d.name || d.id }));
-    return { partId:_currentPart, partName:(PARTS[_currentPart] && PARTS[_currentPart].name) || '파트', devices:list };
+    const customNav = document.querySelector('#nav-custom .nav-item.active[data-dev]');
+    let activeDevice = customNav ? String(customNav.getAttribute('data-dev') || '') : '';
+    if(activeDevice && !list.some(d => d.value === activeDevice)) activeDevice = '';
+    return {
+      partId:_currentPart,
+      partName:(PARTS[_currentPart] && PARTS[_currentPart].name) || '파트',
+      devices:list,
+      activeDevice:activeDevice
+    };
   }
   const chemNav = document.querySelector('#nav-chem .nav-item.active');
-  const currentPg = chemNav ? chemNav.getAttribute('data-pg') : '503';
   const chemDevices = [
     { value:'503', label:'c503' },
     { value:'e801', label:'e801' },
     { value:'b221', label:'b221' },
     { value:'nx10n', label:'NX10N' }
   ];
+  let currentPg = chemNav ? chemNav.getAttribute('data-pg') : '503';
+  if(!chemDevices.some(d => d.value === currentPg)) currentPg = '';
   return {
     partId:'chem',
     partName:'화학',
@@ -3491,15 +3734,151 @@ function saveVendorModal(){
   if(!clean.length){ toast('업체를 1개 이상 입력해주세요','w'); return; }
   S.orderVendors = clean; save(); if(window.fs_save) window.fs_save(); closePersonPop(); toast('업체 메일 저장 완료','s');
 }
+function _getRegularReagentContext(reagent){
+  const deviceText = String((reagent && reagent.device) || '').trim();
+  if(!deviceText) return { partId:'', deviceKey:'', deviceText:'' };
+
+  if(deviceText.startsWith('custom-')){
+    const m = deviceText.match(/^custom-(.+?)-(주시약|소모|cal)$/);
+    const devId = m ? m[1] : '';
+    const dev = (S.customDevices||[]).find(d => d.id === devId);
+    return {
+      partId: dev ? String(dev.partId || '') : '',
+      deviceKey: devId,
+      deviceText
+    };
+  }
+
+  const chemKey = deviceText.startsWith('503') ? '503'
+    : deviceText.startsWith('e801') ? 'e801'
+    : deviceText.startsWith('b221') ? 'b221'
+    : deviceText.startsWith('nx10n') ? 'nx10n'
+    : '';
+  return {
+    partId: chemKey ? 'chem' : '',
+    deviceKey: chemKey,
+    deviceText
+  };
+}
+function _matchesRegularCurrentContext(reagent, ctx){
+  const info = _getRegularReagentContext(reagent);
+  const partId = String((ctx && ctx.partId) || '');
+  const activeDevice = String((ctx && ctx.activeDevice) || '');
+
+  if(partId && info.partId !== partId) return false;
+  if(activeDevice && info.deviceKey !== activeDevice) return false;
+  return true;
+}
+function _regularTypeOrderValue(typeText){
+  const t = String(typeText||'').toLowerCase();
+  if(t.includes('주시약') || t.includes('main')) return 0;
+  if(t.includes('소모시약') || t.includes('소모') || t.includes('consum')) return 1;
+  if(t.includes('cal') || t.includes('qc')) return 2;
+  return 9;
+}
+function _getRegularConfigUsedReagentIds(currentIdx){
+  const ids = new Set();
+  (window._regularConfigDraft||[]).forEach((row, idx) => {
+    if(idx !== currentIdx && row && row.reagentId) ids.add(String(row.reagentId));
+  });
+  return ids;
+}
+function _getRegularConfigCurrentReagents(currentIdx){
+  const ctx = getCurrentOrderContext();
+  const usedIds = _getRegularConfigUsedReagentIds(currentIdx);
+  let list = (S.reagents||[]).filter(r => _matchesRegularCurrentContext(r, ctx));
+  list = list.filter(r => !usedIds.has(String(r.id || '')));
+  return list.slice().sort((a,b)=>{
+    const ta = _regularTypeOrderValue((a.type||'') + ' ' + (a.device||''));
+    const tb = _regularTypeOrderValue((b.type||'') + ' ' + (b.device||''));
+    if(ta !== tb) return ta - tb;
+    return String(a.name||'').localeCompare(String(b.name||''));
+  });
+}
+function _getRegularConfigSelectedLabel(reagentId){
+  const r = (S.reagents||[]).find(x => x.id === reagentId);
+  if(!r) return '';
+  return `${r.name || ''} · ${r.device || ''}`;
+}
+function _getRegularConfigFilteredReagents(query, currentIdx){
+  const q = String(query||'').trim().toLowerCase();
+  const list = _getRegularConfigCurrentReagents(currentIdx);
+  if(!q) return list;
+  return list.filter(r => {
+    const t = `${String(r.name||'')} ${String(r.device||'')} ${String(r.storage||'')} ${String(r.type||'')}`.toLowerCase();
+    return t.includes(q);
+  });
+}
+function _renderRegularReagentPickerBody(idx){
+  const current = ((window._regularConfigDraft||[])[idx] || {}).reagentId || '';
+  const q = (window._regularConfigSearch && window._regularConfigSearch[idx]) || '';
+  const items = _getRegularConfigFilteredReagents(q, idx);
+  const body = document.getElementById('regular-reagent-picker-body');
+  if(!body) return;
+  body.innerHTML = `
+    <div style="font-size:11px;color:var(--tdim);">총 ${items.length}개</div>
+    <div style="max-height:56vh;overflow:auto;border:1px solid var(--border);border-radius:16px;background:#fff;">
+      ${items.length ? items.map(r=>`
+        <button onclick="setRegularConfigReagent(${idx},'${_simpleEsc(r.id)}')" style="width:100%;border:none;border-bottom:1px solid var(--border);background:${r.id===current?'rgba(19,119,255,.08)':'#fff'};padding:14px 16px;text-align:left;display:flex;align-items:flex-start;gap:10px;cursor:pointer;">
+          <span style="margin-top:2px;width:18px;height:18px;border-radius:999px;border:2px solid ${r.id===current?'var(--accent)':'#cbd5e1'};display:inline-flex;align-items:center;justify-content:center;flex:0 0 18px;">
+            <span style="width:8px;height:8px;border-radius:999px;background:${r.id===current?'var(--accent)':'transparent'};"></span>
+          </span>
+          <span style="flex:1;min-width:0;">
+            <span style="display:block;font-size:14px;font-weight:800;color:var(--text);line-height:1.45;word-break:break-word;">${_simpleEsc(r.name||'')}</span>
+            <span style="display:block;margin-top:4px;font-size:11px;color:var(--tdim);">${_simpleEsc(r.device||'-')} · ${_simpleEsc(r.type||'-')}</span>
+          </span>
+        </button>
+      `).join('') : `<div style="padding:18px 14px;text-align:center;font-size:12px;color:var(--tdim);">조건에 맞는 시약이 없습니다</div>`}
+    </div>`;
+}
+function openRegularReagentPicker(idx){
+  const ctx = getCurrentOrderContext();
+  const titlePart = (ctx && ctx.partName) ? ctx.partName : '현재 파트';
+  const titleDevice = (ctx && ctx.activeDevice) ? ` · ${ctx.activeDevice}` : '';
+  window._regularConfigSearch = window._regularConfigSearch || {};
+  const q = window._regularConfigSearch[idx] || '';
+  _makePop(`<div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;">
+      <div>
+        <div style="font-size:15px;font-weight:900;color:var(--text);">기준 시약 선택</div>
+        <div style="margin-top:4px;font-size:11px;color:var(--tdim);">${titlePart}${titleDevice || ' · 전체 장비'} 기준으로 표시 · 주시약 → 소모시약 → CAL&QC 순서</div>
+      </div>
+      <button class="btn sm" onclick="renderRegularConfigModal()">닫기</button>
+    </div>
+    <div style="padding:14px;display:flex;flex-direction:column;gap:10px;">
+      <input id="regular-reagent-search-input" value="${_simpleEsc(q)}"
+        placeholder="시약명 검색"
+        style="width:100%;background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:var(--text);font-size:14px;">
+      <div id="regular-reagent-picker-body"></div>
+      <button class="btn primary" onclick="renderRegularConfigModal()">완료</button>
+    </div>`);
+  const input = document.getElementById('regular-reagent-search-input');
+  if(input){
+    input.addEventListener('input', function(){
+      window._regularConfigSearch = window._regularConfigSearch || {};
+      window._regularConfigSearch[idx] = this.value;
+      _renderRegularReagentPickerBody(idx);
+    });
+  }
+  _renderRegularReagentPickerBody(idx);
+}
+function setRegularConfigReagent(idx,id){
+  if(!window._regularConfigDraft || !_regularConfigDraft[idx]) return;
+  _regularConfigDraft[idx].reagentId = id;
+  renderRegularConfigModal();
+}
 function _regularConfigRowsHtml(){
-  const reagents = (S.reagents||[]).slice().sort((a,b)=>String(a.name||'').localeCompare(String(b.name||'')));
   const vendorOpts = (S.orderVendors||[]).map(v=>`<option value="${_simpleEsc(v.id)}">${_simpleEsc(v.name||'')}</option>`).join('');
+  const ctx = getCurrentOrderContext();
+  const helper = `${ctx.partName || '현재 파트'}${ctx.activeDevice ? ' · '+ctx.activeDevice : ' · 전체 장비'}`;
   return (window._regularConfigDraft||[]).map((cfg,idx)=>`
     <div style="border:1px solid var(--border);border-radius:14px;padding:10px;background:var(--s2);display:flex;flex-direction:column;gap:8px;">
-      <select onchange="updateRegularConfigDraft(${idx},'reagentId',this.value)" style="width:100%;background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:13px;">
-        <option value="">시약 선택</option>
-        ${reagents.map(r=>`<option value="${_simpleEsc(r.id)}" ${r.id===cfg.reagentId?'selected':''}>${_simpleEsc(r.name)} · ${_simpleEsc(r.device||'')}</option>`).join('')}
-      </select>
+      <button type="button" onclick="openRegularReagentPicker(${idx})" style="width:100%;background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 14px;text-align:left;color:var(--text);font-size:13px;">
+        <div style="font-size:10px;color:var(--tdim);margin-bottom:4px;">${helper} 기준 시약</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <div style="flex:1;min-width:0;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${_simpleEsc(_getRegularConfigSelectedLabel(cfg.reagentId) || '시약 선택')}</div>
+          <div style="color:var(--tdim);font-size:12px;">선택</div>
+        </div>
+      </button>
       <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center;">
         <input type="number" min="0" value="${_simpleEsc(cfg.monthlyUsage||'')}" oninput="updateRegularConfigDraft(${idx},'monthlyUsage',this.value)" placeholder="월 사용량" style="width:100%;background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:13px;">
         <select onchange="updateRegularConfigDraft(${idx},'vendorId',this.value)" style="width:100%;background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:13px;">
@@ -3510,7 +3889,7 @@ function _regularConfigRowsHtml(){
     </div>`).join('');
 }
 function renderRegularConfigModal(){
-  _makePop(`<div style="padding:14px 16px;border-bottom:1px solid var(--border);font-size:15px;font-weight:900;color:var(--text);">정규발주 등록하기</div><div style="padding:14px;display:flex;flex-direction:column;gap:10px;"><div style="font-size:12px;color:var(--tdim);line-height:1.6;">시약별 월 사용량과 업체를 등록해두는 단계입니다.</div>${_regularConfigRowsHtml() || '<div style="padding:18px;border:1px dashed var(--border);border-radius:14px;background:var(--s2);font-size:12px;color:var(--tdim);text-align:center;">등록된 정규발주 기준이 없습니다.</div>'}<button class="btn" onclick="addRegularConfigDraft()" style="width:100%;">+ 기준 추가</button><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><button class="btn" onclick="closePersonPop()">취소</button><button class="btn primary" onclick="saveRegularConfigModal()">저장</button></div></div>`);
+  _makePop(`<div style="padding:14px 16px;border-bottom:1px solid var(--border);font-size:15px;font-weight:900;color:var(--text);">정규발주 등록하기</div><div style="padding:14px;display:flex;flex-direction:column;gap:10px;"><div style="font-size:12px;color:var(--tdim);line-height:1.6;">현재 파트/장비 기준 시약만 보이도록 줄였습니다. 시약명을 검색해서 빠르게 찾을 수 있습니다.</div>${_regularConfigRowsHtml() || '<div style="padding:18px;border:1px dashed var(--border);border-radius:14px;background:var(--s2);font-size:12px;color:var(--tdim);text-align:center;">등록된 정규발주 기준이 없습니다.</div>'}<button class="btn" onclick="addRegularConfigDraft()" style="width:100%;">+ 기준 추가</button><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><button class="btn" onclick="closePersonPop()">취소</button><button class="btn primary" onclick="saveRegularConfigModal()">저장</button></div></div>`);
 }
 
 
@@ -3527,19 +3906,18 @@ function _getRegularConfigRows(){
   return cfgs.map(cfg => {
     const reagent = (S.reagents||[]).find(r => r.id === cfg.reagentId) || null;
     const vendor = _getRegularVendor(cfg.vendorId);
-    const deviceText = String((reagent && reagent.device) || '');
-    let partMatch = true;
-    if(ctx.partId === 'chem'){
-      partMatch = /^(503|e801|b221|nx10n)/i.test(deviceText);
-    } else if(ctx.partId){
-      partMatch = deviceText.toLowerCase().includes(ctx.partId.toLowerCase()) || true;
-    }
+    const partMatch = reagent ? _matchesRegularCurrentContext(reagent, ctx) : false;
+    const currentStock = reagent ? calcStock2(reagent.id) : 0;
+    const monthlyUsage = parseInt(cfg.monthlyUsage)||0;
+    const orderQty = Math.max(0, monthlyUsage - currentStock);
     return {
       id: cfg.id || ('rc'+Date.now()),
       reagentId: cfg.reagentId || '',
       reagentName: reagent ? String(reagent.name||'').trim() : '',
       device: reagent ? String(reagent.device||'').trim() : '',
-      monthlyUsage: parseInt(cfg.monthlyUsage)||0,
+      monthlyUsage: monthlyUsage,
+      currentStock: currentStock,
+      orderQty: orderQty,
       vendorId: cfg.vendorId || '',
       vendorName: vendor.name || vendor.email || '-',
       vendorEmail: vendor.email || '',
@@ -3548,19 +3926,41 @@ function _getRegularConfigRows(){
     };
   }).filter(row => row.reagentName && row.monthlyUsage>0 && row.partMatch);
 }
+function _groupRegularOrderItemsByVendor(items){
+  const groups = {};
+  (items||[]).forEach(it => {
+    const key = String(it.vendorId || it.vendorEmail || it.vendorName || '__NO_VENDOR__');
+    if(!groups[key]){
+      groups[key] = {
+        vendorId: it.vendorId || '',
+        vendorName: it.vendorName || '-',
+        vendorEmail: it.vendorEmail || '',
+        vendorCc: it.vendorCc || '',
+        items: []
+      };
+    }
+    groups[key].items.push(it);
+  });
+  return Object.values(groups);
+}
 function _buildRegularOrderPayload(){
   const ctx = getCurrentOrderContext();
   const rows = _getRegularConfigRows();
-  const items = rows.map(r => ({
-    reagentId: r.reagentId,
-    name: r.reagentName,
-    device: r.device,
-    qty: r.monthlyUsage,
-    vendorId: r.vendorId,
-    vendorName: r.vendorName,
-    vendorEmail: r.vendorEmail,
-    vendorCc: r.vendorCc
-  }));
+  const items = rows
+    .map(r => ({
+      reagentId: r.reagentId,
+      name: r.reagentName,
+      device: r.device,
+      monthlyUsage: r.monthlyUsage,
+      currentStock: r.currentStock,
+      qty: r.orderQty,
+      vendorId: r.vendorId,
+      vendorName: r.vendorName,
+      vendorEmail: r.vendorEmail,
+      vendorCc: r.vendorCc
+    }))
+    .filter(x => x.qty > 0);
+  const groups = _groupRegularOrderItemsByVendor(items);
   const emails = [...new Set(items.map(x=>x.vendorEmail).filter(Boolean))];
   const ccs = [...new Set(items.map(x=>x.vendorCc).filter(Boolean))];
   return {
@@ -3568,24 +3968,28 @@ function _buildRegularOrderPayload(){
     partId: ctx.partId,
     partName: ctx.partName,
     items,
+    vendorGroups: groups,
     to: emails.join(','),
     cc: ccs.join(',')
   };
 }
 function openRegularQuick(){
   const rows = _getRegularConfigRows();
+  const visibleRows = rows.filter(row => row.orderQty > 0);
   const body = rows.length
     ? `<div style="display:flex;flex-direction:column;gap:10px;max-height:48vh;overflow:auto;">${rows.map(row => `
-        <div style="border:1px solid var(--border);border-radius:16px;padding:12px 13px;background:var(--s2);display:grid;grid-template-columns:1.4fr .6fr;gap:10px;">
+        <div style="border:1px solid var(--border);border-radius:16px;padding:12px 13px;background:${row.orderQty>0?'var(--s2)':'#f8fafc'};display:grid;grid-template-columns:1.4fr .85fr;gap:10px;opacity:${row.orderQty>0?'1':'0.72'};">
           <div>
             <div style="font-size:12px;font-weight:800;color:var(--text);">${esc(row.reagentName)}</div>
             <div style="margin-top:5px;font-size:11px;color:var(--tdim);">${esc(row.device || '-')} · 업체 ${esc(row.vendorName)}</div>
+            <div style="margin-top:6px;font-size:11px;color:var(--tmid);">월사용량 ${row.monthlyUsage} · 현재고 ${row.currentStock} · 차감후 ${row.orderQty}</div>
           </div>
           <div style="text-align:right;align-self:center;">
             <div style="font-size:10px;font-family:var(--mono);color:var(--tdim);letter-spacing:.08em;">발주수량</div>
-            <div style="margin-top:4px;font-size:20px;font-weight:900;color:var(--accent);">${row.monthlyUsage}</div>
+            <div style="margin-top:4px;font-size:20px;font-weight:900;color:${row.orderQty>0?'var(--accent)':'var(--tdim)'};">${row.orderQty}</div>
           </div>
-        </div>`).join('')}</div>`
+        </div>`).join('')}</div>
+       <div style="margin-top:10px;font-size:11px;color:var(--tdim);">현재고를 월사용량에서 차감해 발주수량을 계산합니다. 차감 후 0개인 항목은 저장/출력/메일/엑셀에서 제외됩니다.</div>`
     : `<div style="padding:20px;border:1px dashed var(--border);border-radius:16px;background:var(--s2);font-size:12px;color:var(--tdim);line-height:1.7;text-align:center;">정규발주 기준이 아직 없습니다.<br>더보기에서 <b>정규발주 등록하기</b>를 먼저 입력해주세요.</div>`;
 
   _makePop(`
@@ -3622,7 +4026,7 @@ function saveRegularConfigModal(){
 }
 function saveRegularOrder(){
   const payload = _buildRegularOrderPayload();
-  if(!payload.items.length){ toast('정규발주 기준이 없습니다','w'); return; }
+  if(!payload.items.length){ toast('현재고 차감 후 발주할 항목이 없습니다','w'); return; }
   S.regularOrders = Array.isArray(S.regularOrders) ? S.regularOrders : [];
   S.regularOrders.unshift(payload);
   save(); if(window.fs_save) window.fs_save();
@@ -3630,7 +4034,7 @@ function saveRegularOrder(){
 }
 function printRegularOrder(){
   const payload = _buildRegularOrderPayload();
-  if(!payload.items.length){ toast('출력할 정규발주 항목이 없습니다','w'); return; }
+  if(!payload.items.length){ toast('현재고 차감 후 출력할 정규발주 항목이 없습니다','w'); return; }
   const html = `<!doctype html><html><head><meta charset="utf-8"><title>정규발주서</title><style>body{font-family:Arial,'Noto Sans KR',sans-serif;padding:24px;color:#111}h1{font-size:22px;margin:0 0 8px}table{width:100%;border-collapse:collapse;margin-top:16px}th,td{border:1px solid #cfd8e3;padding:8px;font-size:13px}th{background:#f5f8fc}.meta{margin:8px 0 14px;font-size:13px;line-height:1.7}.sign{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:28px}.box{border:1px solid #cfd8e3;height:74px;padding:8px;font-size:12px}@media print{body{padding:16px}}</style></head><body><h1>정규발주서</h1><div class="meta">일자: ${payload.savedAt.slice(0,10)}<br>파트: ${esc(payload.partName)}</div><table><thead><tr><th>시약명</th><th>장비</th><th>발주수량</th><th>업체</th></tr></thead><tbody>${payload.items.map(it=>`<tr><td>${esc(it.name)}</td><td>${esc(it.device||'-')}</td><td>${esc(it.qty)}</td><td>${esc(it.vendorName||'-')}</td></tr>`).join('')}</tbody></table><div class="sign"><div class="box">작성</div><div class="box">확인</div><div class="box">승인</div></div></body></html>`;
 
   try{
@@ -3677,22 +4081,72 @@ function printRegularOrder(){
     console.error(e);
   }
 }
+function _openRegularVendorMail(group, payload){
+  const lines = [
+    '정규발주서',
+    '',
+    `일자: ${payload.savedAt.slice(0,10)}`,
+    `파트: ${payload.partName}`,
+    `업체: ${group.vendorName || '-'}`,
+    '',
+    '[품목]',
+    ...(group.items||[]).map(it => `- ${it.name} / 장비: ${it.device || '-'} / 수량: ${it.qty}`)
+  ];
+  const mailto = `mailto:${encodeURIComponent(group.vendorEmail || '')}?cc=${encodeURIComponent(group.vendorCc || '')}&subject=${encodeURIComponent(`[정규발주] ${payload.partName} - ${group.vendorName || '업체'}`)}&body=${encodeURIComponent(lines.join('\n'))}`;
+  location.href = mailto;
+}
 function emailRegularOrder(){
   const payload = _buildRegularOrderPayload();
-  if(!payload.items.length){ toast('메일로 보낼 정규발주 항목이 없습니다','w'); return; }
-  const lines = [
-    '정규발주서','',`일자: ${payload.savedAt.slice(0,10)}`,`파트: ${payload.partName}`,'','[품목]',
-    ...payload.items.map(it => `- ${it.name} / 장비: ${it.device || '-'} / 수량: ${it.qty} / 업체: ${it.vendorName || '-'}`)
-  ];
-  const mailto = `mailto:${encodeURIComponent(payload.to)}?cc=${encodeURIComponent(payload.cc)}&subject=${encodeURIComponent(`[정규발주] ${payload.partName}`)}&body=${encodeURIComponent(lines.join('\n'))}`;
-  location.href = mailto;
+  if(!payload.items.length){ toast('현재고 차감 후 메일로 보낼 정규발주 항목이 없습니다','w'); return; }
+
+  const groups = (payload.vendorGroups || []).filter(g => (g.items||[]).length);
+  const missingVendor = groups.filter(g => !g.vendorId);
+  const missingEmail = groups.filter(g => g.vendorId && !g.vendorEmail);
+
+  if(missingVendor.length){
+    toast('업체가 지정되지 않은 정규발주 항목이 있어요. 업체 선택 후 다시 시도해주세요','w');
+    return;
+  }
+  if(missingEmail.length){
+    toast('선택한 업체에 메일주소가 등록되지 않았어요','w');
+    return;
+  }
+
+  if(groups.length === 1){
+    _openRegularVendorMail(groups[0], payload);
+    return;
+  }
+
+  _makePop(`<div style="padding:14px 16px;border-bottom:1px solid var(--border);font-size:15px;font-weight:900;color:var(--text);">업체별 발주 메일 보내기</div>
+    <div style="padding:14px;display:flex;flex-direction:column;gap:10px;">
+      <div style="font-size:12px;color:var(--tdim);line-height:1.6;">업체별로 나눠서 메일을 보냅니다. 보낼 업체를 선택하세요.</div>
+      ${groups.map((g,idx)=>`
+        <button class="btn" onclick="_openRegularVendorMail((window._regularVendorMailGroups||[])[${idx}], window._regularVendorMailPayload); closePersonPop();" style="width:100%;justify-content:space-between;padding:12px 14px;">
+          <span style="text-align:left;">
+            <span style="display:block;font-size:13px;font-weight:800;color:var(--text);">${esc(g.vendorName || '-')}</span>
+            <span style="display:block;margin-top:4px;font-size:11px;color:var(--tdim);">${esc(g.vendorEmail || '-')} · ${(g.items||[]).length}건</span>
+          </span>
+          <span style="font-size:12px;color:var(--accent);font-weight:800;">메일</span>
+        </button>
+      `).join('')}
+      <button class="btn" onclick="closePersonPop()">닫기</button>
+    </div>`);
+  window._regularVendorMailGroups = groups;
+  window._regularVendorMailPayload = payload;
 }
 function exportRegularOrderExcel(){
   const payload = _buildRegularOrderPayload();
-  if(!payload.items.length){ toast('엑셀로 내보낼 정규발주 항목이 없습니다','w'); return; }
+  if(!payload.items.length){ toast('현재고 차감 후 엑셀로 내보낼 정규발주 항목이 없습니다','w'); return; }
   if(typeof XLSX === 'undefined'){ toast('엑셀 라이브러리 로딩 중입니다','w'); return; }
   const rows = payload.items.map(it => ({파트:payload.partName, 시약명:it.name, 장비:it.device||'', 발주수량:it.qty, 업체:it.vendorName||''}));
   const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [
+    { wch: 10 },
+    { wch: 34 },
+    { wch: 20 },
+    { wch: 10 },
+    { wch: 18 }
+  ];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, '정규발주');
   XLSX.writeFile(wb, `정규발주-${payload.partName}-${payload.savedAt.slice(0,10)}.xlsx`);
@@ -3888,8 +4342,54 @@ const DV_MAP = {
 
 // 더 정확한 매핑 함수
 function dvMatchReagent(invoiceName) {
-  const name = invoiceName.trim();
+  const name = String(invoiceName || '').trim();
+  if(!name) return null;
+
   const nameU = name.toUpperCase();
+  const norm = dvNormalizeName(name);
+  const looseNorm = dvNormalizeNameLoose(name);
+
+  // 1) 등록 직후 포함해 가장 안전한 우선순위: 정확명 / 정규화명 완전일치
+  const exact = S.reagents.find(r => String(r.name || '').trim() === name);
+  if(exact) return exact;
+
+  const exactNorm = S.reagents.find(r => dvNormalizeName(r.name) === norm);
+  if(exactNorm) return exactNorm;
+
+  const exactLoose = S.reagents.find(r => dvNormalizeNameLoose(r.name) === looseNorm);
+  if(exactLoose) return exactLoose;
+
+  // 2) 느슨한 포함 비교: 버전/공백/하이픈 차이 보정
+  const looseCandidates = S.reagents.filter(r => {
+    const rn = dvNormalizeNameLoose(r.name);
+    return rn && looseNorm && (rn.includes(looseNorm) || looseNorm.includes(rn));
+  });
+  if(looseCandidates.length === 1) return looseCandidates[0];
+
+  // 3) 토큰 겹침 점수 기반 비교
+  const invoiceTokens = dvTokenizeName(name);
+  if(invoiceTokens.length){
+    let best = null;
+    let bestScore = 0;
+    for(const r of S.reagents){
+      const rt = dvTokenizeName(r.name);
+      if(!rt.length) continue;
+      const overlap = invoiceTokens.filter(t => rt.includes(t));
+      let score = overlap.length;
+      if(score < 2) continue;
+      if(rt.includes(invoiceTokens[0])) score += 1;
+      if(invoiceTokens.includes(rt[0])) score += 1;
+      const ln = dvNormalizeNameLoose(r.name);
+      if(ln.startsWith(looseNorm) || looseNorm.startsWith(ln)) score += 2;
+      if(score > bestScore){
+        best = r;
+        bestScore = score;
+      }else if(score === bestScore){
+        best = null;
+      }
+    }
+    if(best && bestScore >= 3) return best;
+  }
 
   // 정확한 키워드 매핑
   const keywordMap = [
@@ -3920,7 +4420,6 @@ function dvMatchReagent(invoiceName) {
     ["CDC1",                  "CDC1. cobas c pack green"],
     ["FLUID PACK S2",         "FLUID PACK S2"],
     ["S1 RINSE",              "S1 RINSE SOLUTION(2PCS)"],
-    // e801 면역시약 - PDF 파싱 시 첫글자 잘리는 경우 대응
     ["AFP",                   "AFP Elecsys E2G 300 V2"],
     ["FP Elecsys",            "AFP Elecsys E2G 300 V2"],
     ["CA 19-9",               "CA19-9 G2 300T"],
@@ -3955,7 +4454,6 @@ function dvMatchReagent(invoiceName) {
     ["Multiplate",            "Multiplate Test Cells"],
     ["S-Monovette",           "S-Monovette 1.6ml Hirudin"],
     ["Tips for e-line",       "Tips for e-line Pitette"],
-    // 첫글자 잘린 경우 대응
     ["LB2",                   "ALB2. 750T. cobas c503"],
     ["ILT3",                  "BILT3. 1050T. cobas c503"],
     ["H3/ETH/CO2 Control N",  "NH3/ETH/CO2 Control N"],
@@ -3966,12 +4464,7 @@ function dvMatchReagent(invoiceName) {
     ["SE Standard high",      "ISE Standard high 10x3ML"],
     ["CX3",                   "A1CX3. 200T. cobas C503"],
     ["RPR LTIA",              "HiSens RPR LTIA"],
-
-
-
-
     ["V2.1 Elecsys E2G 300 V2", "Total PSA Elecsys E2G 300"],
-    // T3, CEA CS 등 추가
     ["T3 Elecsys",            "T3 300T"],
     ["T3 300T",               "T3 300T"],
     ["CEA CS",                "CEA CS Gen.2"],
@@ -3986,19 +4479,17 @@ function dvMatchReagent(invoiceName) {
 
   for (const [kw, appName] of keywordMap) {
     if (nameU.includes(kw.toUpperCase())) {
-      const r = S.reagents.find(x => x.name === appName);
-      return r || null;
+      const r = S.reagents.find(x => x.name === appName)
+        || S.reagents.find(x => dvNormalizeName(x.name) === dvNormalizeName(appName))
+        || S.reagents.find(x => dvNormalizeNameLoose(x.name) === dvNormalizeNameLoose(appName));
+      if(r) return r;
     }
   }
 
-  // 매핑 전략: 알파벳부분(숫자제거) + 단위 조합
-  // ALB2→ALB, 750T 고정 → ALB2. 750T. cobas c503 매핑
-  // 세대변환(ALB2→ALB3)에도 대응
-  const alphaKey = nameU.replace(/[\d,.]/g,'').trim().split(/\s+/)[0]; // 첫 단어 알파벳만
-  const unitKey  = nameU.match(/(\d+T|\d+ML|\d+PCS|\d+x\d+[LM])/i)?.[1]||''; // 단위 추출
+  const alphaKey = nameU.replace(/[\d,.]/g,'').trim().split(/\s+/)[0];
+  const unitKey  = nameU.match(/(\d+T|\d+ML|\d+PCS|\d+x\d+[LM])/i)?.[1]||'';
 
   if(alphaKey.length >= 2 && unitKey){
-    // 알파벳부분 포함 + 단위 포함
     const byAlphaUnit = S.reagents.filter(r=>{
       const rAlpha = r.name.toUpperCase().replace(/[\d,.]/g,'').trim().split(/\s+/)[0];
       const rUnit  = r.unit ? r.unit.toUpperCase() : '';
@@ -4007,7 +4498,6 @@ function dvMatchReagent(invoiceName) {
     if(byAlphaUnit.length === 1) return byAlphaUnit[0];
   }
 
-  // 알파벳부분만으로 단일 매핑 (겹치지 않는 경우)
   if(alphaKey.length >= 3){
     const byAlpha = S.reagents.filter(r=>{
       const rAlpha = r.name.toUpperCase().replace(/[\d,.]/g,'').trim().split(/\s+/)[0];
@@ -4016,7 +4506,6 @@ function dvMatchReagent(invoiceName) {
     if(byAlpha.length === 1) return byAlpha[0];
   }
 
-  // 앞 4글자 정확 매핑 (fallback)
   const key4 = name.slice(0,4).toUpperCase();
   const matches4 = S.reagents.filter(r => r.name.slice(0,4).toUpperCase() === key4);
   if(matches4.length === 1) return matches4[0];
@@ -4041,6 +4530,100 @@ function dvParseLine(line) {
 
 let _dvParsedRows = [];
 let _dvRawText = '';
+let _dvPendingRegisterName = '';
+
+function dvNormalizeName(v){
+  return String(v||'')
+    .toLowerCase()
+    .replace(/[\s\-_.,/()\[\]]+/g,'')
+    .replace(/×/g,'x')
+    .trim();
+}
+
+function dvNormalizeNameLoose(v){
+  return dvNormalizeName(v)
+    .replace(/cobascpackgreen/g,'')
+    .replace(/cobascpack/g,'')
+    .replace(/cobasc503/g,'')
+    .replace(/cobasc/g,'')
+    .replace(/elecsyse2g/g,'elecsys')
+    .replace(/elecsys/g,'')
+    .replace(/gen2/g,'g2')
+    .replace(/genii/g,'g2')
+    .replace(/ⅲ/g,'3')
+    .replace(/iii/g,'3')
+    .replace(/v(\d+)0+/g,'v$1')
+    .replace(/[^a-z0-9]/g,'')
+    .trim();
+}
+
+function dvTokenizeName(v){
+  return String(v||'')
+    .toUpperCase()
+    .replace(/[,_./()\[\]-]+/g,' ')
+    .replace(/×/g,'X')
+    .split(/\s+/)
+    .map(s => s.trim())
+    .filter(Boolean)
+    .filter(s => !['ELECSYS','E2G','COBAS','PACK','GREEN'].includes(s));
+}
+
+function dvRegisterUnmatchedEncoded(encoded){
+  try{
+    dvRegisterUnmatched(decodeURIComponent(encoded || ''));
+  }catch(e){
+    dvRegisterUnmatched(encoded || '');
+  }
+}
+
+function dvRegisterUnmatched(rawName){
+  _dvPendingRegisterName = String(rawName || '').trim();
+
+  const delivery = document.getElementById('delivery-modal');
+  if(delivery) delivery.style.display = 'none';
+
+  showAddReagent();
+  const addModal = document.getElementById('add-modal');
+  if(addModal) addModal.style.display = 'flex';
+
+  const input = document.getElementById('new-name');
+  if(input){
+    input.value = _dvPendingRegisterName;
+    try{ input.blur(); }catch(e){}
+  }
+}
+
+function dvRefreshParsedMatches(forceRawName, forceReagent){
+  if(!Array.isArray(_dvParsedRows)) return { matchedNow: 0, stillUnmatched: 0 };
+
+  const forcedNorm = dvNormalizeName(forceRawName);
+  let matchedNow = 0;
+  let stillUnmatched = 0;
+
+  _dvParsedRows = _dvParsedRows.map(row => {
+    if(!row || !row.rawName) return row;
+    if(row.reagent) return row;
+
+    let reagent = null;
+    if(forceReagent && forcedNorm && dvNormalizeName(row.rawName) === forcedNorm){
+      reagent = forceReagent;
+    }
+    if(!reagent){
+      reagent = dvMatchReagent(row.rawName);
+    }
+
+    if(reagent){
+      matchedNow++;
+      return {...row, reagent};
+    }
+
+    stillUnmatched++;
+    return {...row, reagent:null};
+  });
+
+  if(typeof dvRenderParsedResult === 'function') dvRenderParsedResult();
+  return { matchedNow, stillUnmatched };
+}
 
 function dvParseText() {
   const text = document.getElementById('dv-paste-text').value;
@@ -4288,7 +4871,18 @@ function dvRenderParsedResult() {
       </div>
     `).join('')}
     ${noLotExp.length?`<div style="font-size:11px;color:var(--yellow);margin-top:6px;">⚠ LOT·유효기간 없어 제외: ${noLotExp.map(r=>esc(r.reagent.name)).join(', ')}</div>`:''}
-    ${unmatched.length?`<div style="font-size:11px;color:var(--tdim);margin-top:6px;">시약목록없음(제외): ${unmatched.map(r=>esc(r.rawName)).join(', ')}</div>`:''}
+    ${unmatched.length?`
+      <div style="margin-top:8px;">
+        <div style="font-size:11px;color:var(--tdim);margin-bottom:6px;">시약목록없음(제외)</div>
+        ${unmatched.map(r=>`
+          <div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:6px;">
+            <div style="font-size:12px;color:var(--text);font-weight:600;line-height:1.45;word-break:break-word;">${esc(r.rawName)}</div>
+            <div style="display:flex;gap:8px;margin-top:8px;">
+              <button type="button" onclick="dvRegisterUnmatchedEncoded('${encodeURIComponent(r.rawName)}')" style="flex:1;padding:9px 10px;background:var(--accent);border:none;border-radius:8px;color:#000;font-size:12px;font-weight:700;cursor:pointer;">이 이름으로 등록</button>
+            </div>
+          </div>
+        `).join('')}
+      </div>`:''}
   `;
   toast(matched.length?`${matched.length}개 파싱 완료`:'매핑된 시약 없음', matched.length?'s':'w');
   // 명세서 날짜 자동 추출
@@ -4917,6 +5511,12 @@ function goCustomDevice(deviceId, btn) {
             <button class="cattab" data-cat="${dvKey}-소모" onclick="setCatCustom(this,'${dvKey}')">소모시약</button>
             <button class="cattab" data-cat="${dvKey}-cal" onclick="setCatCustom(this,'${dvKey}')">CAL&QC</button>
           </div>
+          <div class="reagent-search-wrap">
+            <input id="search-${dvKey}" class="reagent-search" type="text" placeholder="검색" autocomplete="off"
+                   oninput="onReagentSearchInput('${dvKey}', this.value)" onfocus="onReagentSearchInput('${dvKey}', this.value)">
+            <button type="button" class="reagent-search-clear" id="search-${dvKey}-clear" onpointerdown="event.preventDefault();event.stopPropagation();clearReagentSearch('${dvKey}')">×</button>
+            <div id="search-${dvKey}-results" class="reagent-search-results"></div>
+          </div>
           <select onchange="setYear('${dvKey}',this.value)" style="font-size:11px;padding:3px 6px;border-radius:8px;border:1px solid var(--b2);background:var(--s2);color:var(--t1);font-family:var(--mono);">
             <option value="all">전체</option><option value="2026" selected>2026</option><option value="2025">2025</option><option value="2024">2024</option>
           </select>
@@ -4949,6 +5549,7 @@ function setCatCustom(btn, dvKey) {
     const p=document.getElementById(`pills-${dvKey}-${c}`); if(p) p.style.display=show?'':'none';
     const l=document.getElementById(`ledger-${dvKey}-${c}`); if(l) l.style.display=show?'flex':'none';
   });
+  clearReagentSearch(dvKey);
   renderPills(cat); renderLedger(cat);
 }
 function goCustomStatus(btn) {
@@ -5011,17 +5612,17 @@ function showPersonModal() {
   const parts = ['chem','immuno','hema','urine','bloodbank','molecular'];
   let html = '';
   parts.forEach(partId => {
-    const persons = S.partPersons[partId] || [...PERSONS];
+    const persons = getPersonsForPart(partId);
     html += `
       <div style="margin-bottom:18px;">
         <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:8px;">${PART_NAMES_KO[partId]||partId}</div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
-          ${persons.map(p=>`
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:34px;">
+          ${persons.length ? persons.map(p=>`
             <div style="display:flex;align-items:center;gap:4px;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:4px 10px;">
               <span style="font-size:13px;">${p}</span>
               <button onclick="removePerson('${partId}','${p}')" style="background:none;border:none;color:var(--tdim);font-size:12px;cursor:pointer;padding:0 2px;">✕</button>
             </div>
-          `).join('')}
+          `).join('') : `<div style="font-size:12px;color:var(--tdim);padding:6px 2px;">등록된 담당자 없음</div>`}
         </div>
         <div style="display:flex;gap:6px;">
           <input id="new-person-${partId}" type="text" placeholder="담당자 이름"
@@ -5045,17 +5646,19 @@ function addPerson(partId) {
   const name = input.value.trim();
   if(!name) return;
   if(!S.partPersons) S.partPersons = {};
-  if(!S.partPersons[partId]) S.partPersons[partId] = [...PERSONS];
+  if(!S.partPersons[partId]) S.partPersons[partId] = partId === 'chem' ? [...PERSONS] : [];
   if(S.partPersons[partId].includes(name)){ toast('이미 있어요','w'); return; }
   S.partPersons[partId].push(name);
+  save(); if(window.fs_save) window.fs_save();
   input.value = '';
   showPersonModal();
 }
 
 function removePerson(partId, name) {
   if(!S.partPersons) S.partPersons = {};
-  if(!S.partPersons[partId]) S.partPersons[partId] = [...PERSONS];
+  if(!S.partPersons[partId]) S.partPersons[partId] = partId === 'chem' ? [...PERSONS] : [];
   S.partPersons[partId] = S.partPersons[partId].filter(p=>p!==name);
+  save(); if(window.fs_save) window.fs_save();
   showPersonModal();
 }
 
