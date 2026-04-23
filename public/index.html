@@ -527,6 +527,11 @@ body{
 .nav-item .nav-mini.txt{font-size:17px;font-weight:800;font-family:var(--mono);}
 .nav-item.active{color:#126bff;}
 .nav-item.active .nav-dev{background:linear-gradient(180deg,#f3f8ff 0%,#e7f0ff 100%);color:inherit;box-shadow:inset 0 0 0 1px rgba(18,107,255,0.10), 0 8px 16px rgba(18,107,255,0.10);}
+.nav-item.device-tab{color:#9aa4b2!important;}
+.nav-item.device-tab .nav-dev{color:inherit;}
+.nav-item.device-tab.active{color:var(--nav-active-color,#126bff)!important;}
+.nav-item.device-tab.active .nav-dev{background:linear-gradient(180deg,#f3f8ff 0%,#e7f0ff 100%);box-shadow:inset 0 0 0 1px rgba(18,107,255,0.10), 0 8px 16px rgba(18,107,255,0.10);}
+
 .nav-item[data-pg="503"].active{color:var(--503m);} .nav-item[data-pg="e801"].active{color:var(--e801);} .nav-item[data-pg="b221"].active{color:var(--blue);} .nav-item[data-pg="nx10n"].active{color:var(--orange);} .nav-item[data-pg="more"].active{color:#4b5565;}
 .nav-item .nav-lbl{display:block; font-size:9px; color:inherit;}
 #head-back-btn{color:#1a2640 !important;background:rgba(255,255,255,0.84)!important;border-radius:999px;padding:8px 12px!important;box-shadow:0 8px 18px rgba(26,56,110,0.10), inset 0 0 0 1px rgba(217,225,237,0.95);}
@@ -851,13 +856,8 @@ body table[data-print-ledger="1"] th:last-child, body table[data-print-ledger="1
       const data = snap.data();
       if(!window._fsLastSave || data._savedAt > window._fsLastSave) {
         window._fsLastSave = data._savedAt;
-        S.reagents = data.reagents || [];
+        S.reagents = data.reagents;
         S.records = data.records || [];
-        if(data.customDevices) S.customDevices = data.customDevices;
-        if(data.partPersons) S.partPersons = data.partPersons;
-        if(data.regularConfigs) S.regularConfigs = data.regularConfigs;
-        if(data.orderVendors) S.orderVendors = data.orderVendors;
-        if(data.emergencyOrders) S.emergencyOrders = data.emergencyOrders;
         localStorage.setItem('rms4', JSON.stringify(S));
         if(typeof renderAll === 'function') renderAll();
       }
@@ -889,11 +889,6 @@ body table[data-print-ledger="1"] th:last-child, body table[data-print-ledger="1
     _REF.set({
       reagents: S.reagents,
       records: S.records,
-      customDevices: S.customDevices || [],
-      partPersons: S.partPersons || {},
-      regularConfigs: S.regularConfigs || [],
-      orderVendors: S.orderVendors || [],
-      emergencyOrders: S.emergencyOrders || [],
       _savedAt: savedAt
     }).then(() => {
       const t = new Date(savedAt);
@@ -1074,7 +1069,7 @@ body table[data-print-ledger="1"] th:last-child, body table[data-print-ledger="1
         <div style="margin-left:auto;display:flex;gap:6px;">
           <button class="btn sm" onclick="undoLast()" title="되돌리기">↩</button>
           <button class="btn sm" onclick="printLedger(curCat503)">PDF</button>
-          <button class="btn sm" onclick="manualSave()" style="background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700;">저장</button>
+          <button class="btn sm" onclick="manualSave()" style="background:var(--503m);color:#fff;border-color:var(--503m);font-weight:700;">저장</button>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
@@ -1120,7 +1115,7 @@ body table[data-print-ledger="1"] th:last-child, body table[data-print-ledger="1
         <div style="margin-left:auto;display:flex;gap:6px;">
           <button class="btn sm" onclick="undoLast()">↩</button>
           <button class="btn sm" onclick="printLedger(curCate801)">PDF</button>
-          <button class="btn sm" onclick="manualSave()" style="background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700;">저장</button>
+          <button class="btn sm" onclick="manualSave()" style="background:var(--e801);color:#fff;border-color:var(--e801);font-weight:700;">저장</button>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
@@ -1162,12 +1157,16 @@ body table[data-print-ledger="1"] th:last-child, body table[data-print-ledger="1
         </div>
         <div style="margin-left:auto;display:flex;gap:6px;">
           <button class="btn sm" onclick="undoLast()">↩</button>
-          <button class="btn sm" onclick="printLedger('b221-주시약')">PDF</button>
-          <button class="btn sm" onclick="manualSave()" style="background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700;">저장</button>
+          <button class="btn sm" onclick="printLedger(curCatB221)">PDF</button>
+          <button class="btn sm" onclick="manualSave()" style="background:var(--blue);color:#fff;border-color:var(--blue);font-weight:700;">저장</button>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-        
+        <div style="display:flex;gap:6px;overflow-x:auto;flex:1;-webkit-overflow-scrolling:touch;">
+          <button class="cattab act" data-cat="b221-주시약" onclick="setCatB221(this)">주시약</button>
+          <button class="cattab" data-cat="b221-소모" onclick="setCatB221(this)">소모시약</button>
+          <button class="cattab" data-cat="b221-cal" onclick="setCatB221(this)">Cal/QC</button>
+        </div>
         <div class="reagent-search-wrap">
           <input id="search-b221" class="reagent-search" type="text" placeholder="검색" autocomplete="off"
                  oninput="onReagentSearchInput('b221', this.value)" onfocus="onReagentSearchInput('b221', this.value)">
@@ -1182,8 +1181,12 @@ body table[data-print-ledger="1"] th:last-child, body table[data-print-ledger="1
         </select>
       </div>
       <div class="reagent-pills" id="pills-b221-주시약"></div>
+      <div class="reagent-pills" id="pills-b221-소모" style="display:none"></div>
+      <div class="reagent-pills" id="pills-b221-cal" style="display:none"></div>
     </div>
     <div id="ledger-b221-주시약" style="flex:1;overflow:hidden;display:flex;flex-direction:column;"></div>
+    <div id="ledger-b221-소모" style="flex:1;overflow:hidden;display:none;flex-direction:column;"></div>
+    <div id="ledger-b221-cal" style="flex:1;overflow:hidden;display:none;flex-direction:column;"></div>
   </div>
 
   <!-- ── NX10N PAGE ── -->
@@ -1196,12 +1199,16 @@ body table[data-print-ledger="1"] th:last-child, body table[data-print-ledger="1
         </div>
         <div style="margin-left:auto;display:flex;gap:6px;">
           <button class="btn sm" onclick="undoLast()">↩</button>
-          <button class="btn sm" onclick="printLedger('nx10n-주시약')">PDF</button>
-          <button class="btn sm" onclick="manualSave()" style="background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700;">저장</button>
+          <button class="btn sm" onclick="printLedger(curCatNx10n)">PDF</button>
+          <button class="btn sm" onclick="manualSave()" style="background:var(--orange);color:#fff;border-color:var(--orange);font-weight:700;">저장</button>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-        
+        <div style="display:flex;gap:6px;overflow-x:auto;flex:1;-webkit-overflow-scrolling:touch;">
+          <button class="cattab act" data-cat="nx10n-주시약" onclick="setCatNx10n(this)">주시약</button>
+          <button class="cattab" data-cat="nx10n-소모" onclick="setCatNx10n(this)">소모시약</button>
+          <button class="cattab" data-cat="nx10n-cal" onclick="setCatNx10n(this)">Cal/QC</button>
+        </div>
         <div class="reagent-search-wrap">
           <input id="search-nx10n" class="reagent-search" type="text" placeholder="검색" autocomplete="off"
                  oninput="onReagentSearchInput('nx10n', this.value)" onfocus="onReagentSearchInput('nx10n', this.value)">
@@ -1216,8 +1223,12 @@ body table[data-print-ledger="1"] th:last-child, body table[data-print-ledger="1
         </select>
       </div>
       <div class="reagent-pills" id="pills-nx10n-주시약"></div>
+      <div class="reagent-pills" id="pills-nx10n-소모" style="display:none"></div>
+      <div class="reagent-pills" id="pills-nx10n-cal" style="display:none"></div>
     </div>
     <div id="ledger-nx10n-주시약" style="flex:1;overflow:hidden;display:flex;flex-direction:column;"></div>
+    <div id="ledger-nx10n-소모" style="flex:1;overflow:hidden;display:none;flex-direction:column;"></div>
+    <div id="ledger-nx10n-cal" style="flex:1;overflow:hidden;display:none;flex-direction:column;"></div>
   </div>
 
   <!-- 유효기간 현황 -->
@@ -1552,7 +1563,11 @@ body table[data-print-ledger="1"] th:last-child, body table[data-print-ledger="1
         <textarea id="dv-paste-text" placeholder="명세서 텍스트 붙여넣기..." style="width:100%;height:100px;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text);font-size:12px;resize:none;box-sizing:border-box;font-family:var(--mono);"></textarea>
         <button onclick="dvParseText()" style="width:100%;padding:10px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;margin-top:6px;">🔍 파싱</button>
         <!-- 파싱 결과 -->
-        <div id="dv-parse-result" style="margin-top:12px;display:flex;flex-direction:column;gap:6px;"></div>
+        <div id="dv-result-search-wrap" style="display:none;margin-top:12px;">
+          <input id="dv-result-search" placeholder="🔍 결과 내 검색..." oninput="_dvRenderFiltered(this.value)"
+            style="width:100%;box-sizing:border-box;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text);font-size:12px;outline:none;">
+        </div>
+        <div id="dv-parse-result" style="margin-top:6px;display:flex;flex-direction:column;gap:6px;"></div>
       </div>
       <div style="padding:12px 16px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;display:flex;gap:8px;">
         <button onclick="closeDelivery()" style="flex:1;padding:12px;background:var(--s2);border:1px solid var(--border);border-radius:10px;color:var(--tmid);font-size:13px;font-weight:600;cursor:pointer;">취소</button>
@@ -1582,18 +1597,7 @@ body table[data-print-ledger="1"] th:last-child, body table[data-print-ledger="1
 // ══════════════════════════════════════
 // STATE
 // ══════════════════════════════════════
-const _defaultData = {"reagents":[{"id":"a7378c11","name":"ALB2. 750T. cobas c503","device":"503-주시약","storage":"냉장","unit":"750T"},{"id":"5c4f2232","name":"ALP2. 1100T. cobas c pack green","device":"503-주시약","storage":"냉장","unit":"1100T"},{"id":"26e65495","name":"ALTP2. 800T. cobas c pack green","device":"503-주시약","storage":"냉장","unit":"800T"},{"id":"48a3a6ce","name":"AMYL2. 750T. cobas c pack green","device":"503-주시약","storage":"냉장","unit":"800T"},{"id":"5cc630c5","name":"ASTP2. 800T. cobas c pack green","device":"503-주시약","storage":"냉장","unit":"800T"},{"id":"97ef2330","name":"BILD2. 1000T. cobas c pack green","device":"503-주시약","storage":"냉장","unit":"1000T"},{"id":"c6c4e19f","name":"BILT3. 1050T. cobas c503","device":"503-주시약","storage":"냉장","unit":"1050T"},{"id":"e4c498a4","name":"Calcium GEN.2 1500T","device":"503-주시약","storage":"냉장","unit":"1500T"},{"id":"2be870ae","name":"CHOL2. 2600T. cobas c pack green","device":"503-주시약","storage":"냉장","unit":"2600T"},{"id":"4ef57c01","name":"CK. 500T. cobas c pack green","device":"503-주시약","storage":"냉장","unit":"500T"},{"id":"44485d33","name":"CREAJ2. 2500T. cobas c pack green","device":"503-주시약","storage":"냉장","unit":"2500T"},{"id":"b0e35de1","name":"CRP4. 500T. cobas C pack green","device":"503-주시약","storage":"냉장","unit":"500T"},{"id":"6e133633","name":"GGT-2. 400T. cobas c pack green","device":"503-주시약","storage":"냉장","unit":"400T"},{"id":"567da031","name":"GLUC3. 3300T. cobas c pack green","device":"503-주시약","storage":"냉장","unit":"3300T"},{"id":"4ebf2c73","name":"HCYS. 100T. cobas c pack green","device":"503-주시약","storage":"냉장","unit":"100T"},{"id":"724e4e7b","name":"HDLC4. 700T. cobas c pack green","device":"503-주시약","storage":"냉장","unit":"700T"},{"id":"4c3ddf81","name":"IRON GEN.2 700T","device":"503-주시약","storage":"냉장","unit":"700T"},{"id":"c7dc46da","name":"LDHI2. 850T. cobas c503","device":"503-주시약","storage":"냉장","unit":"850T"},{"id":"281b9c01","name":"LDLC3. 600T. cobas c pack green","device":"503-주시약","storage":"냉장","unit":"600T"},{"id":"9b9a5d31","name":"CO2-L. 250T. cobas c pack green","device":"503-주시약","storage":"냉장","unit":"250T"},{"id":"1cd78d56","name":"MG2. 690T. cobas c pack green","device":"503-주시약","storage":"냉장","unit":"690T"},{"id":"40aa844c","name":"PHOS2. 750T. cobas c pack green","device":"503-주시약","storage":"냉장","unit":"750T"},{"id":"2e48782c","name":"RF-II. 400T. cobas c pack green","device":"503-주시약","storage":"냉장","unit":"400T"},{"id":"15d06926","name":"TP2. 1050T. cobas c pack green","device":"503-주시약","storage":"냉장","unit":"1050T"},{"id":"1eb4a6a6","name":"TRIGL. 1000T. cobas c pack green","device":"503-주시약","storage":"냉장","unit":"1000T"},{"id":"d96d51bb","name":"UA2. 1300T. cobas c pack green","device":"503-주시약","storage":"냉장","unit":"1300T"},{"id":"2bbfaab2","name":"UREAL. 600T. cobas c pack green","device":"503-주시약","storage":"냉장","unit":"600T"},{"id":"03fa3c1d","name":"UIBC. 100T. cobas c pack green","device":"503-주시약","storage":"냉장","unit":"100T"},{"id":"6b7c16b7","name":"HiSens RPR LTIA","device":"503-주시약","storage":"냉장","unit":"BOX"},{"id":"6d97db8e","name":"ISE Internal Standard Gen.2 conc.","device":"503-주시약","storage":"냉장","unit":"510ml"},{"id":"6b936a86","name":"A1CX3. 200T. cobas C503","device":"503-주시약","storage":"냉장","unit":"200T"},{"id":"8767bff3","name":"ECO-D. 40T. cobas c pack green","device":"503-소모","storage":"냉장","unit":"40T"},{"id":"87c68fde","name":"NaOH-D. cobas c pack green","device":"503-소모","storage":"냉장","unit":"123ml"},{"id":"7fb6189a","name":"NACL 9% Dil (123ml)","device":"503-소모","storage":"냉장","unit":"123ml"},{"id":"0327496c","name":"SMS(123ml)","device":"503-소모","storage":"냉장","unit":"123㎖"},{"id":"4e15faa5","name":"Acid Wash 2X2L","device":"503-소모","storage":"냉장","unit":"2x2L"},{"id":"68bc9d10","name":"Basic Wash 2x2L","device":"503-소모","storage":"냉장","unit":"2x2L"},{"id":"13209e3c","name":"NACL 9% SI, 14500T","device":"503-소모","storage":"냉장","unit":"14500T"},{"id":"a2b7e460","name":"CDC1. cobas c pack green","device":"503-소모","storage":"냉장","unit":"PC"},{"id":"20a0bef1","name":"A1CD. cobas c503","device":"503-소모","storage":"냉장","unit":"50ml"},{"id":"7b74b65e","name":"SCCS, 50Test","device":"503-소모","storage":"냉장","unit":"50ml"},{"id":"cc8ced44","name":"Activator for cobas c. Integra. c111","device":"503-소모","storage":"냉장","unit":"9*12ml"},{"id":"0ade39a7","name":"DEPROTEINIZER (125ML)","device":"503-소모","storage":"냉장","unit":"125ml"},{"id":"28610bc8","name":"REFERENCE ELECTRODE","device":"503-소모","storage":"냉장","unit":"PC"},{"id":"bfa8ee98","name":"Catrige K","device":"503-소모","storage":"냉장","unit":"PC"},{"id":"a654e756","name":"Reaction Cell Set for","device":"503-소모","storage":"냉장","unit":"PC"},{"id":"8e51f93d","name":"CFas (AUTO CAL)","device":"503-cal","storage":"냉장","unit":"12x3ml"},{"id":"8f7cc584","name":"CFas Lipids","device":"503-cal","storage":"냉장","unit":"3x1ml"},{"id":"1504981e","name":"CFas Protein","device":"503-cal","storage":"냉장","unit":"5x1ml"},{"id":"610fd1d5","name":"CFas HbA1c","device":"503-cal","storage":"냉장","unit":"5x1ml"},{"id":"cd0fd759","name":"Homocysteine CAL","device":"503-cal","storage":"냉장","unit":"2x3ml"},{"id":"56cfa2d9","name":"PRECISET RF","device":"503-cal","storage":"냉장","unit":"5*1㎖"},{"id":"3e21f7de","name":"IRON(Fe/UIBC) Standard","device":"503-cal","storage":"냉장","unit":"1x75ml"},{"id":"b12186b6","name":"ISE Standard low 10x3ML","device":"503-cal","storage":"냉장","unit":"10x3ml"},{"id":"4bfbaaaa","name":"ISE Standard high 10x3ML","device":"503-cal","storage":"냉장","unit":"10x3ml"},{"id":"2b7529e3","name":"HiSens RPR LTIA Calibrator","device":"503-cal","storage":"냉장","unit":"PC"},{"id":"a539732a","name":"NH3/ETH/CO2 Calibrator","device":"503-cal","storage":"냉장","unit":"2x4ml"},{"id":"ef60cf02","name":"PreciControl Clinchem multi 1","device":"503-cal","storage":"냉장","unit":"20*5㎖"},{"id":"76100c03","name":"PreciControl Clinchem multi 2","device":"503-cal","storage":"냉장","unit":"20*5㎖"},{"id":"d6294c03","name":"Homocysteine Control","device":"503-cal","storage":"냉장","unit":"2x3ml"},{"id":"b23e88ee","name":"RF Control","device":"503-cal","storage":"냉장","unit":"PC"},{"id":"d42b6a84","name":"NH3/ETH/CO2 Control N","device":"503-cal","storage":"냉장","unit":"2x4ml"},{"id":"2b71479c","name":"NH3/ETH/CO2 Control A","device":"503-cal","storage":"냉장","unit":"2x4ml"},{"id":"6d462547","name":"HiSens RPR LTIA Control","device":"503-cal","storage":"냉장","unit":"PC"},{"id":"52dd26ae","name":"PreciControl HbA1c Norm","device":"503-cal","storage":"냉장","unit":"4*1ml"},{"id":"2486f0f8","name":"PreciControl HbA1c Path","device":"503-cal","storage":"냉장","unit":"4*1ml"},{"id":"a999e9fe","name":"AFP Elecsys E2G 300 V2","device":"e801-주시약","storage":"냉장","unit":"300T"},{"id":"3e5cd726","name":"CA125 G2 300T","device":"e801-주시약","storage":"냉장","unit":"300T"},{"id":"2825d7c5","name":"CA19-9 G2 300T","device":"e801-주시약","storage":"냉장","unit":"300T"},{"id":"eba053d1","name":"CEA Elecsys E2G 300","device":"e801-주시약","storage":"냉장","unit":"300T"},{"id":"7cf21202","name":"FT4 G4 Elecsys E2G 300","device":"e801-주시약","storage":"냉장","unit":"300T"},{"id":"fcfab6ed","name":"T3 300T","device":"e801-주시약","storage":"냉장","unit":"300T"},{"id":"0c59e132","name":"TSH Elecsys E2G 300 V2","device":"e801-주시약","storage":"냉장","unit":"300T"},{"id":"16aeb89b","name":"Ferritin Gen.2 300T","device":"e801-주시약","storage":"냉장","unit":"300T"},{"id":"cf61d0fe","name":"Vitamin-D total Ⅲ 300T","device":"e801-주시약","storage":"냉장","unit":"300T"},{"id":"bef33c47","name":"ProCell M G2 2×2L Elecsys E2G","device":"e801-소모","storage":"냉장","unit":"2*2L"},{"id":"45a1ba51","name":"PreClean M G2 2×2L Elecsys E2G","device":"e801-소모","storage":"냉장","unit":"2*2L"},{"id":"57c43f4c","name":"ISE Cleaning Solution 5*100ml","device":"e801-소모","storage":"냉장","unit":"5x100ml"},{"id":"c1946d92","name":"AFP CS Gen.2.1.","device":"e801-cal","storage":"냉장","unit":"2x2x1ml"},{"id":"4696a254","name":"CA125 CS G2","device":"e801-cal","storage":"냉장","unit":"2x2x1ml"},{"id":"22b9fa8d","name":"CA19-9 CS CS","device":"e801-cal","storage":"냉장","unit":"2x2x1ml"},{"id":"c047f4dd","name":"CEA CS Gen.2","device":"e801-cal","storage":"냉장","unit":"2x2x1ml"},{"id":"a7e48270","name":"FT4 G4 CS Elecsys","device":"e801-cal","storage":"냉장","unit":"2x2x1ml"},{"id":"e6ce0de6","name":"T3 CS","device":"e801-cal","storage":"냉장","unit":"4*1ml"},{"id":"b3faf5be","name":"TSH CS Elecsys V3","device":"e801-cal","storage":"냉장","unit":"2*2*1.3ml"},{"id":"dc8808f9","name":"Ferritin CS Gen.2","device":"e801-cal","storage":"냉장","unit":"2x2x1ml"},{"id":"03f0d9d0","name":"Vitamin-D total Ⅲ CS","device":"e801-cal","storage":"냉장","unit":"2*2*1ml"},{"id":"80be751c","name":"PreciControl Universal G.2","device":"e801-cal","storage":"냉장","unit":"4*3ml"},{"id":"8df287a2","name":"PreciControl TM Elecsys.cobas e","device":"e801-cal","storage":"냉장","unit":"2*2*3ml"},{"id":"ebc39e18","name":"PreciControl Vitamin-D total Ⅲ","device":"e801-cal","storage":"냉장","unit":"3*2*1ml"},{"id":"f583ff59","name":"S1 RINSE SOLUTION(2PCS)","device":"b221-주시약","storage":"냉장","unit":"2PCS"},{"id":"fabe4354","name":"FLUID PACK S2","device":"b221-주시약","storage":"냉장","unit":"PC"},{"id":"7ca8c5b6","name":"AUTO-TROL.PLUS B LEVEL 1","device":"b221-주시약","storage":"냉장","unit":"PC"},{"id":"3473db85","name":"AUTO-TROL.PLUS B LEVEL 2","device":"b221-주시약","storage":"냉장","unit":"PC"},{"id":"1e38818f","name":"AUTO-TROL.PLUS B LEVEL 3","device":"b221-주시약","storage":"냉장","unit":"PC"},{"id":"e6a164a8","name":"NH3-W Ⅱ QC","device":"nx10n-주시약","storage":"냉장","unit":"PC"},{"id":"8d096497","name":"NH3-W Ⅱ SLIDE","device":"nx10n-주시약","storage":"냉장","unit":"PC"},{"id":"20g7jl6i","name":"ISE Reference Electerolyte","device":"503-주시약","storage":"냉장","unit":""},{"id":"j8hz53f6","name":"NH3-W Ⅱ DRI-CHEM QC","device":"nx10n-주시약","storage":"냉장","unit":""},{"id":"arlpj2x0","name":"NH3-W Ⅱ DRI-CHEM SLIDE","device":"nx10n-주시약","storage":"냉장","unit":""},
-{"id":"r_hbsag","name":"HBsAg G2 Elecsys E2G 300","device":"e801-주시약","storage":"냉장","unit":"300T"},
-{"id":"r_antihbs","name":"Anti-HBs G2 Elecsys E2G 300","device":"e801-주시약","storage":"냉장","unit":"300T"},
-{"id":"r_hiv","name":"HIV duo Elecsys E2G 300","device":"e801-주시약","storage":"냉장","unit":"300T"},
-{"id":"r_pct","name":"PCT Brahms-Roche Elecsys E2G 300","device":"e801-주시약","storage":"냉장","unit":"300T"},
-{"id":"r_probnp","name":"proBNP G2 Elecsys E2G 300","device":"e801-주시약","storage":"냉장","unit":"300T"},
-{"id":"r_troponin","name":"Troponin T hs Elecsys E2G 300","device":"e801-주시약","storage":"냉장","unit":"300T"},
-{"id":"r_ckmb","name":"CK-MB Elecsys E2G 100","device":"e801-주시약","storage":"냉장","unit":"100T"},
-{"id":"r_anticcp","name":"Anti-CCP Elecsys E2G 100","device":"e801-주시약","storage":"냉장","unit":"100T"},
-{"id":"r_totalpsa","name":"Total PSA Elecsys E2G 300","device":"e801-주시약","storage":"냉장","unit":"300T"},
-{"id":"r_antihav","name":"Anti-HAV G2 Elecsys E2G 300","device":"e801-주시약","storage":"냉장","unit":"300T"},
-{"id":"r_antihcv","name":"Anti-HCV G2 Elecsys E2G 300","device":"e801-주시약","storage":"냉장","unit":"300T"},{"id":"r_assaytip","name":"AssayTip/Assaycup tray","device":"e801-소모","storage":"실온","unit":"105x36T"},{"id":"r_diluent","name":"Diluent Universal E2G","device":"e801-소모","storage":"실온","unit":"45.2ml"},{"id":"r_si2","name":"SI2. 14500T. cobas c pack green","device":"503-소모","storage":"냉장","unit":"14500T"},{"id":"r_lamp","name":"LAMP HALOGEN ASSY 12V/50W","device":"503-소모","storage":"실온","unit":"pk"},{"id":"r_multiplate","name":"Multiplate Test Cells","device":"e801-소모","storage":"실온","unit":"60pcs"},{"id":"r_smonovette","name":"S-Monovette 1.6ml Hirudin","device":"e801-소모","storage":"실온","unit":"PC"},{"id":"r_tips","name":"Tips for e-line Pitette","device":"e801-소모","storage":"실온","unit":"1000's"}],"records":[]};
+const _defaultData = {"reagents": [{"id": "a7378c11", "name": "ALB2. 750T. cobas c503", "device": "503-주시약", "storage": "냉장", "unit": "750T"}, {"id": "5c4f2232", "name": "ALP2. 1100T. cobas c pack green", "device": "503-주시약", "storage": "냉장", "unit": "1100T"}, {"id": "26e65495", "name": "ALTP2. 800T. cobas c pack green", "device": "503-주시약", "storage": "냉장", "unit": "800T"}, {"id": "48a3a6ce", "name": "AMYL2. 750T. cobas c pack green", "device": "503-주시약", "storage": "냉장", "unit": "800T"}, {"id": "5cc630c5", "name": "ASTP2. 800T. cobas c pack green", "device": "503-주시약", "storage": "냉장", "unit": "800T"}, {"id": "97ef2330", "name": "BILD2. 1000T. cobas c pack green", "device": "503-주시약", "storage": "냉장", "unit": "1000T"}, {"id": "c6c4e19f", "name": "BILT3. 1050T. cobas c503", "device": "503-주시약", "storage": "냉장", "unit": "1050T"}, {"id": "e4c498a4", "name": "Calcium GEN.2 1500T", "device": "503-주시약", "storage": "냉장", "unit": "1500T"}, {"id": "2be870ae", "name": "CHOL2. 2600T. cobas c pack green", "device": "503-주시약", "storage": "냉장", "unit": "2600T"}, {"id": "4ef57c01", "name": "CK. 500T. cobas c pack green", "device": "503-주시약", "storage": "냉장", "unit": "500T"}, {"id": "44485d33", "name": "CREAJ2. 2500T. cobas c pack green", "device": "503-주시약", "storage": "냉장", "unit": "2500T"}, {"id": "b0e35de1", "name": "CRP4. 500T. cobas C pack green", "device": "503-주시약", "storage": "냉장", "unit": "500T"}, {"id": "6e133633", "name": "GGT-2. 400T. cobas c pack green", "device": "503-주시약", "storage": "냉장", "unit": "400T"}, {"id": "567da031", "name": "GLUC3. 3300T. cobas c pack green", "device": "503-주시약", "storage": "냉장", "unit": "3300T"}, {"id": "4ebf2c73", "name": "HCYS. 100T. cobas c pack green", "device": "503-주시약", "storage": "냉장", "unit": "100T"}, {"id": "724e4e7b", "name": "HDLC4. 700T. cobas c pack green", "device": "503-주시약", "storage": "냉장", "unit": "700T"}, {"id": "4c3ddf81", "name": "IRON GEN.2 700T", "device": "503-주시약", "storage": "냉장", "unit": "700T"}, {"id": "c7dc46da", "name": "LDHI2. 850T. cobas c503", "device": "503-주시약", "storage": "냉장", "unit": "850T"}, {"id": "281b9c01", "name": "LDLC3. 600T. cobas c pack green", "device": "503-주시약", "storage": "냉장", "unit": "600T"}, {"id": "9b9a5d31", "name": "CO2-L. 250T. cobas c pack green", "device": "503-주시약", "storage": "냉장", "unit": "250T"}, {"id": "1cd78d56", "name": "MG2. 690T. cobas c pack green", "device": "503-주시약", "storage": "냉장", "unit": "690T"}, {"id": "40aa844c", "name": "PHOS2. 750T. cobas c pack green", "device": "503-주시약", "storage": "냉장", "unit": "750T"}, {"id": "2e48782c", "name": "RF-II. 400T. cobas c pack green", "device": "503-주시약", "storage": "냉장", "unit": "400T"}, {"id": "15d06926", "name": "TP2. 1050T. cobas c pack green", "device": "503-주시약", "storage": "냉장", "unit": "1050T"}, {"id": "1eb4a6a6", "name": "TRIGL. 1000T. cobas c pack green", "device": "503-주시약", "storage": "냉장", "unit": "1000T"}, {"id": "d96d51bb", "name": "UA2. 1300T. cobas c pack green", "device": "503-주시약", "storage": "냉장", "unit": "1300T"}, {"id": "2bbfaab2", "name": "UREAL. 600T. cobas c pack green", "device": "503-주시약", "storage": "냉장", "unit": "600T"}, {"id": "03fa3c1d", "name": "UIBC. 100T. cobas c pack green", "device": "503-주시약", "storage": "냉장", "unit": "100T"}, {"id": "6b7c16b7", "name": "HiSens RPR LTIA", "device": "503-주시약", "storage": "냉장", "unit": "BOX"}, {"id": "6d97db8e", "name": "ISE Internal Standard Gen.2 conc.", "device": "503-주시약", "storage": "냉장", "unit": "510ml"}, {"id": "6b936a86", "name": "A1CX3. 200T. cobas C503", "device": "503-주시약", "storage": "냉장", "unit": "200T"}, {"id": "8767bff3", "name": "ECO-D. 40T. cobas c pack green", "device": "503-소모", "storage": "냉장", "unit": "40T"}, {"id": "87c68fde", "name": "NaOH-D. cobas c pack green", "device": "503-소모", "storage": "냉장", "unit": "123ml"}, {"id": "7fb6189a", "name": "NACL 9% Dil (123ml)", "device": "503-소모", "storage": "냉장", "unit": "123ml"}, {"id": "0327496c", "name": "SMS(123ml)", "device": "503-소모", "storage": "냉장", "unit": "123㎖"}, {"id": "4e15faa5", "name": "Acid Wash 2X2L", "device": "503-소모", "storage": "냉장", "unit": "2x2L"}, {"id": "68bc9d10", "name": "Basic Wash 2x2L", "device": "503-소모", "storage": "냉장", "unit": "2x2L"}, {"id": "13209e3c", "name": "NACL 9% SI, 14500T", "device": "503-소모", "storage": "냉장", "unit": "14500T"}, {"id": "a2b7e460", "name": "CDC1. cobas c pack green", "device": "503-소모", "storage": "냉장", "unit": "PC"}, {"id": "20a0bef1", "name": "A1CD. cobas c503", "device": "503-소모", "storage": "냉장", "unit": "50ml"}, {"id": "7b74b65e", "name": "SCCS, 50Test", "device": "503-소모", "storage": "냉장", "unit": "50ml"}, {"id": "cc8ced44", "name": "Activator for cobas c. Integra. c111", "device": "503-소모", "storage": "냉장", "unit": "9*12ml"}, {"id": "0ade39a7", "name": "DEPROTEINIZER (125ML)", "device": "503-소모", "storage": "냉장", "unit": "125ml"}, {"id": "28610bc8", "name": "REFERENCE ELECTRODE", "device": "503-소모", "storage": "냉장", "unit": "PC"}, {"id": "bfa8ee98", "name": "Catrige K", "device": "503-소모", "storage": "냉장", "unit": "PC"}, {"id": "a654e756", "name": "Reaction Cell Set for", "device": "503-소모", "storage": "냉장", "unit": "PC"}, {"id": "8e51f93d", "name": "CFas (AUTO CAL)", "device": "503-cal", "storage": "냉장", "unit": "12x3ml"}, {"id": "8f7cc584", "name": "CFas Lipids", "device": "503-cal", "storage": "냉장", "unit": "3x1ml"}, {"id": "1504981e", "name": "CFas Protein", "device": "503-cal", "storage": "냉장", "unit": "5x1ml"}, {"id": "610fd1d5", "name": "CFas HbA1c", "device": "503-cal", "storage": "냉장", "unit": "5x1ml"}, {"id": "cd0fd759", "name": "Homocysteine CAL", "device": "503-cal", "storage": "냉장", "unit": "2x3ml"}, {"id": "56cfa2d9", "name": "PRECISET RF", "device": "503-cal", "storage": "냉장", "unit": "5*1㎖"}, {"id": "3e21f7de", "name": "IRON(Fe/UIBC) Standard", "device": "503-cal", "storage": "냉장", "unit": "1x75ml"}, {"id": "b12186b6", "name": "ISE Standard low 10x3ML", "device": "503-cal", "storage": "냉장", "unit": "10x3ml"}, {"id": "4bfbaaaa", "name": "ISE Standard high 10x3ML", "device": "503-cal", "storage": "냉장", "unit": "10x3ml"}, {"id": "2b7529e3", "name": "HiSens RPR LTIA Calibrator", "device": "503-cal", "storage": "냉장", "unit": "PC"}, {"id": "a539732a", "name": "NH3/ETH/CO2 Calibrator", "device": "503-cal", "storage": "냉장", "unit": "2x4ml"}, {"id": "ef60cf02", "name": "PreciControl Clinchem multi 1", "device": "503-cal", "storage": "냉장", "unit": "20*5㎖"}, {"id": "76100c03", "name": "PreciControl Clinchem multi 2", "device": "503-cal", "storage": "냉장", "unit": "20*5㎖"}, {"id": "d6294c03", "name": "Homocysteine Control", "device": "503-cal", "storage": "냉장", "unit": "2x3ml"}, {"id": "b23e88ee", "name": "RF Control", "device": "503-cal", "storage": "냉장", "unit": "PC"}, {"id": "d42b6a84", "name": "NH3/ETH/CO2 Control N", "device": "503-cal", "storage": "냉장", "unit": "2x4ml"}, {"id": "2b71479c", "name": "NH3/ETH/CO2 Control A", "device": "503-cal", "storage": "냉장", "unit": "2x4ml"}, {"id": "6d462547", "name": "HiSens RPR LTIA Control", "device": "503-cal", "storage": "냉장", "unit": "PC"}, {"id": "52dd26ae", "name": "PreciControl HbA1c Norm", "device": "503-cal", "storage": "냉장", "unit": "4*1ml"}, {"id": "2486f0f8", "name": "PreciControl HbA1c Path", "device": "503-cal", "storage": "냉장", "unit": "4*1ml"}, {"id": "a999e9fe", "name": "AFP Elecsys E2G 300 V2", "device": "e801-주시약", "storage": "냉장", "unit": "300T"}, {"id": "3e5cd726", "name": "CA125 G2 300T", "device": "e801-주시약", "storage": "냉장", "unit": "300T"}, {"id": "2825d7c5", "name": "CA19-9 G2 300T", "device": "e801-주시약", "storage": "냉장", "unit": "300T"}, {"id": "eba053d1", "name": "CEA Elecsys E2G 300", "device": "e801-주시약", "storage": "냉장", "unit": "300T"}, {"id": "7cf21202", "name": "FT4 G4 Elecsys E2G 300", "device": "e801-주시약", "storage": "냉장", "unit": "300T"}, {"id": "fcfab6ed", "name": "T3 300T", "device": "e801-주시약", "storage": "냉장", "unit": "300T"}, {"id": "0c59e132", "name": "TSH Elecsys E2G 300 V2", "device": "e801-주시약", "storage": "냉장", "unit": "300T"}, {"id": "16aeb89b", "name": "Ferritin Gen.2 300T", "device": "e801-주시약", "storage": "냉장", "unit": "300T"}, {"id": "cf61d0fe", "name": "Vitamin-D total Ⅲ 300T", "device": "e801-주시약", "storage": "냉장", "unit": "300T"}, {"id": "bef33c47", "name": "ProCell M G2 2×2L Elecsys E2G", "device": "e801-소모", "storage": "냉장", "unit": "2*2L"}, {"id": "45a1ba51", "name": "PreClean M G2 2×2L Elecsys E2G", "device": "e801-소모", "storage": "냉장", "unit": "2*2L"}, {"id": "57c43f4c", "name": "ISE Cleaning Solution 5*100ml", "device": "e801-소모", "storage": "냉장", "unit": "5x100ml"}, {"id": "c1946d92", "name": "AFP CS Gen.2.1.", "device": "e801-cal", "storage": "냉장", "unit": "2x2x1ml"}, {"id": "4696a254", "name": "CA125 CS G2", "device": "e801-cal", "storage": "냉장", "unit": "2x2x1ml"}, {"id": "22b9fa8d", "name": "CA19-9 CS CS", "device": "e801-cal", "storage": "냉장", "unit": "2x2x1ml"}, {"id": "c047f4dd", "name": "CEA CS Gen.2", "device": "e801-cal", "storage": "냉장", "unit": "2x2x1ml"}, {"id": "a7e48270", "name": "FT4 G4 CS Elecsys", "device": "e801-cal", "storage": "냉장", "unit": "2x2x1ml"}, {"id": "e6ce0de6", "name": "T3 CS", "device": "e801-cal", "storage": "냉장", "unit": "4*1ml"}, {"id": "b3faf5be", "name": "TSH CS Elecsys V3", "device": "e801-cal", "storage": "냉장", "unit": "2*2*1.3ml"}, {"id": "dc8808f9", "name": "Ferritin CS Gen.2", "device": "e801-cal", "storage": "냉장", "unit": "2x2x1ml"}, {"id": "03f0d9d0", "name": "Vitamin-D total Ⅲ CS", "device": "e801-cal", "storage": "냉장", "unit": "2*2*1ml"}, {"id": "80be751c", "name": "PreciControl Universal G.2", "device": "e801-cal", "storage": "냉장", "unit": "4*3ml"}, {"id": "8df287a2", "name": "PreciControl TM Elecsys.cobas e", "device": "e801-cal", "storage": "냉장", "unit": "2*2*3ml"}, {"id": "ebc39e18", "name": "PreciControl Vitamin-D total Ⅲ", "device": "e801-cal", "storage": "냉장", "unit": "3*2*1ml"}, {"id": "f583ff59", "name": "S1 RINSE SOLUTION(2PCS)", "device": "b221-주시약", "storage": "냉장", "unit": "2PCS"}, {"id": "fabe4354", "name": "FLUID PACK S2", "device": "b221-주시약", "storage": "냉장", "unit": "PC"}, {"id": "7ca8c5b6", "name": "AUTO-TROL.PLUS B LEVEL 1", "device": "b221-주시약", "storage": "냉장", "unit": "PC"}, {"id": "3473db85", "name": "AUTO-TROL.PLUS B LEVEL 2", "device": "b221-주시약", "storage": "냉장", "unit": "PC"}, {"id": "1e38818f", "name": "AUTO-TROL.PLUS B LEVEL 3", "device": "b221-주시약", "storage": "냉장", "unit": "PC"}, {"id": "e6a164a8", "name": "NH3-W Ⅱ QC", "device": "nx10n-주시약", "storage": "냉장", "unit": "PC"}, {"id": "8d096497", "name": "NH3-W Ⅱ SLIDE", "device": "nx10n-주시약", "storage": "냉장", "unit": "PC"}, {"id": "20g7jl6i", "name": "ISE Reference Electerolyte", "device": "503-주시약", "storage": "냉장", "unit": ""}, {"id": "j8hz53f6", "name": "NH3-W Ⅱ DRI-CHEM QC", "device": "nx10n-주시약", "storage": "냉장", "unit": ""}, {"id": "arlpj2x0", "name": "NH3-W Ⅱ DRI-CHEM SLIDE", "device": "nx10n-주시약", "storage": "냉장", "unit": ""}, {"id": "r_hbsag", "name": "HBsAg G2 Elecsys E2G 300", "device": "e801-주시약", "storage": "냉장", "unit": "300T"}, {"id": "r_antihbs", "name": "Anti-HBs G2 Elecsys E2G 300", "device": "e801-주시약", "storage": "냉장", "unit": "300T"}, {"id": "r_hiv", "name": "HIV duo Elecsys E2G 300", "device": "e801-주시약", "storage": "냉장", "unit": "300T"}, {"id": "r_pct", "name": "PCT Brahms-Roche Elecsys E2G 300", "device": "e801-주시약", "storage": "냉장", "unit": "300T"}, {"id": "r_probnp", "name": "proBNP G2 Elecsys E2G 300", "device": "e801-주시약", "storage": "냉장", "unit": "300T"}, {"id": "r_troponin", "name": "Troponin T hs Elecsys E2G 300", "device": "e801-주시약", "storage": "냉장", "unit": "300T"}, {"id": "r_ckmb", "name": "CK-MB Elecsys E2G 100", "device": "e801-주시약", "storage": "냉장", "unit": "100T"}, {"id": "r_anticcp", "name": "Anti-CCP Elecsys E2G 100", "device": "e801-주시약", "storage": "냉장", "unit": "100T"}, {"id": "r_totalpsa", "name": "Total PSA Elecsys E2G 300", "device": "e801-주시약", "storage": "냉장", "unit": "300T"}, {"id": "r_antihav", "name": "Anti-HAV G2 Elecsys E2G 300", "device": "e801-주시약", "storage": "냉장", "unit": "300T"}, {"id": "r_antihcv", "name": "Anti-HCV G2 Elecsys E2G 300", "device": "e801-주시약", "storage": "냉장", "unit": "300T"}, {"id": "r_assaytip", "name": "AssayTip/Assaycup tray", "device": "e801-소모", "storage": "실온", "unit": "105x36T"}, {"id": "r_diluent", "name": "Diluent Universal E2G", "device": "e801-소모", "storage": "실온", "unit": "45.2ml"}, {"id": "r_si2", "name": "SI2. 14500T. cobas c pack green", "device": "503-소모", "storage": "냉장", "unit": "14500T"}, {"id": "r_lamp", "name": "LAMP HALOGEN ASSY 12V/50W", "device": "503-소모", "storage": "실온", "unit": "pk"}, {"id": "r_multiplate", "name": "Multiplate Test Cells", "device": "e801-소모", "storage": "실온", "unit": "60pcs"}, {"id": "r_smonovette", "name": "S-Monovette 1.6ml Hirudin", "device": "e801-소모", "storage": "실온", "unit": "PC"}, {"id": "r_tips", "name": "Tips for e-line Pitette", "device": "e801-소모", "storage": "실온", "unit": "1000's"}, {"id": "r_cleancell", "name": "CleanCell M 2×2L Elecsys E2G", "device": "e801-소모", "storage": "냉장", "unit": "2*2L"}], "records": []};
 
 
 
@@ -1612,15 +1616,15 @@ let S = (()=>{
   ];
   return d;
 })();
-const DEVS = ['503-주시약','503-소모','503-cal','e801-주시약','e801-소모','e801-cal','b221-주시약','nx10n-주시약'];
+const DEVS = ['503-주시약','503-소모','503-cal','e801-주시약','e801-소모','e801-cal','b221-주시약','b221-소모','b221-cal','nx10n-주시약','nx10n-소모','nx10n-cal'];
 const DV503  = ['503-주시약','503-소모','503-cal'];
 const DVe801 = ['e801-주시약','e801-소모','e801-cal'];
-const DVb221 = ['b221-주시약'];
-const DVnx10n= ['nx10n-주시약'];
+const DVb221 = ['b221-주시약','b221-소모','b221-cal'];
+const DVnx10n= ['nx10n-주시약','nx10n-소모','nx10n-cal'];
 let curSelReagent = {};
 DEVS.forEach(d=>curSelReagent[d]=null);
 let recItems=[], selSet=new Set(), curType='입고', curDevice='503-주시약';
-let curCat503='503-주시약', curCate801='e801-주시약';
+let curCat503='503-주시약', curCate801='e801-주시약', curCatB221='b221-주시약', curCatNx10n='nx10n-주시약';
 let yrFilter={'503':'2026','e801':'2026','b221':'2026','nx10n':'2026'};
 let pendPar=null;
 
@@ -1833,6 +1837,24 @@ function setCate801(btn){ const s=document.getElementById('search-e801'); if(s) 
     const l=document.getElementById('ledger-'+d); if(l){l.style.display=d===curCate801?'flex':'none';if(d===curCate801)l.style.flexDirection='column';}
   });
 }
+function setCatB221(btn){ const s=document.getElementById('search-b221'); if(s) s.value=''; _closeReagentSearch('b221'); _toggleReagentSearchClear('b221');
+  curCatB221=btn.dataset.cat;
+  document.querySelectorAll('#pg-b221 .cattab').forEach(b=>b.classList.remove('act'));
+  btn.classList.add('act');
+  DVb221.forEach(d=>{
+    const p=document.getElementById('pills-'+d); if(p) p.style.display=d===curCatB221?'flex':'none';
+    const l=document.getElementById('ledger-'+d); if(l){l.style.display=d===curCatB221?'flex':'none';if(d===curCatB221)l.style.flexDirection='column';}
+  });
+}
+function setCatNx10n(btn){ const s=document.getElementById('search-nx10n'); if(s) s.value=''; _closeReagentSearch('nx10n'); _toggleReagentSearchClear('nx10n');
+  curCatNx10n=btn.dataset.cat;
+  document.querySelectorAll('#pg-nx10n .cattab').forEach(b=>b.classList.remove('act'));
+  btn.classList.add('act');
+  DVnx10n.forEach(d=>{
+    const p=document.getElementById('pills-'+d); if(p) p.style.display=d===curCatNx10n?'flex':'none';
+    const l=document.getElementById('ledger-'+d); if(l){l.style.display=d===curCatNx10n?'flex':'none';if(d===curCatNx10n)l.style.flexDirection='column';}
+  });
+}
 function showParList503(){
   const r=S.records.filter(x=>x.device.startsWith('503')&&x.needsParallel)[0];
   if(r)openParFor(r.id);
@@ -1965,8 +1987,8 @@ function clearReagentSearch(pageKey){
 function _currentDvByPageKey(pageKey){
   if(pageKey === '503') return curCat503;
   if(pageKey === 'e801') return curCate801;
-  if(pageKey === 'b221') return 'b221-주시약';
-  if(pageKey === 'nx10n') return 'nx10n-주시약';
+  if(pageKey === 'b221') return curCatB221;
+  if(pageKey === 'nx10n') return curCatNx10n;
   if(String(pageKey||'').startsWith('custom-')){
     const activeCatBtn = document.querySelector(`#pg-${pageKey} .cattab.act`);
     return activeCatBtn ? activeCatBtn.getAttribute('data-cat') : `${pageKey}-주시약`;
@@ -2031,12 +2053,31 @@ document.addEventListener('click', function(e){
   if(!e.target.closest('.reagent-search-wrap')) _closeAllReagentSearch();
 });
 
+function getDvAccentColor(dv){
+  const key = String(dv||'');
+  if(key.startsWith('503')) return 'var(--503m)';
+  if(key.startsWith('e801')) return 'var(--e801)';
+  if(key.startsWith('b221')) return 'var(--blue)';
+  if(key.startsWith('nx10n')) return 'var(--orange)';
+  const match = key.match(/^custom-(.+?)-(주시약|소모|cal)$/);
+  if(match){
+    const customList = Array.isArray(S.customDevices) ? S.customDevices : [];
+    const idx = customList.findIndex(x => String(x.id) === match[1]);
+    const device = idx > -1 ? customList[idx] : null;
+    if(device){
+      const spec = getCustomDeviceNavSpec(device, idx);
+      if(spec && spec.color) return spec.color;
+    }
+  }
+  return 'var(--orange)';
+}
+
 function renderPills(dv){
   const container=document.getElementById('pills-'+dv);
   if(!container) return;
   const reagents=S.reagents.filter(r=>r.device===dv);
   if(!curSelReagent[dv]&&reagents.length) curSelReagent[dv]=reagents[0].id;
-  const dvColor=dv.startsWith('503')?'var(--503m)':dv.startsWith('e801')?'var(--e801)':dv.startsWith('b221')?'var(--blue)':'var(--orange)';
+  const dvColor=getDvAccentColor(dv);
   let html=reagents.map(r=>{
     const recs=S.records.filter(x=>x.reagentId===r.id&&x.expiry);
     const minD=recs.length?Math.min(...recs.map(x=>dU(x.expiry)).filter(x=>x!==null)):null;
@@ -2304,7 +2345,11 @@ function getDeviceLabelForAddModal(deviceKey){
     'e801-소모':'cobas e801 — 소모시약',
     'e801-cal':'cobas e801 — CAL&QC',
     'b221-주시약':'cobas b221 — 주시약',
-    'nx10n-주시약':'NX10N — 주시약'
+    'b221-소모':'cobas b221 — 소모시약',
+    'b221-cal':'cobas b221 — CAL&QC',
+    'nx10n-주시약':'NX10N — 주시약',
+    'nx10n-소모':'NX10N — 소모시약',
+    'nx10n-cal':'NX10N — CAL&QC'
   };
   if(map[deviceKey]) return map[deviceKey];
   const match = String(deviceKey||'').match(/^custom-(.+?)-(주시약|소모|cal)$/);
@@ -2328,39 +2373,63 @@ function getCurrentAddDevice(dv){
   const pgKey = chemNav ? chemNav.getAttribute('data-pg') : '503';
   if(pgKey === '503') return curCat503 || '503-주시약';
   if(pgKey === 'e801') return curCate801 || 'e801-주시약';
-  if(pgKey === 'b221') return 'b221-주시약';
-  if(pgKey === 'nx10n') return 'nx10n-주시약';
+  if(pgKey === 'b221') return curCatB221 || 'b221-주시약';
+  if(pgKey === 'nx10n') return curCatNx10n || 'nx10n-주시약';
   return '503-주시약';
 }
-function buildAddDeviceOptions(selectedDevice){
-  const select = document.getElementById('new-device');
-  if(!select) return;
-  let options = [];
-  if(_currentPart){
-    const devices = (S.customDevices||[]).filter(d=>d.partId===_currentPart);
+function getAddDeviceOptionsByPart(partId){
+  if(partId && partId !== 'chem'){
+    const options = [];
+    const devices = (S.customDevices||[]).filter(d=>d.partId===partId);
     devices.forEach(dev=>{
       const prefix = `custom-${dev.id}`;
       options.push({value:`${prefix}-주시약`, label:`${dev.name} — 주시약`});
       options.push({value:`${prefix}-소모`, label:`${dev.name} — 소모시약`});
       options.push({value:`${prefix}-cal`, label:`${dev.name} — CAL&QC`});
     });
-  } else {
-    options = [
-      {value:'503-주시약', label:'cobas 503 — 주시약'},
-      {value:'503-소모', label:'cobas 503 — 소모시약'},
-      {value:'503-cal', label:'cobas 503 — CAL&QC'},
-      {value:'e801-주시약', label:'cobas e801 — 주시약'},
-      {value:'e801-소모', label:'cobas e801 — 소모시약'},
-      {value:'e801-cal', label:'cobas e801 — CAL&QC'},
-      {value:'b221-주시약', label:'cobas b221 — 주시약'},
-      {value:'nx10n-주시약', label:'NX10N — 주시약'}
-    ];
+    return options;
   }
-  if(!options.length && selectedDevice){
-    options.push({value:selectedDevice, label:getDeviceLabelForAddModal(selectedDevice)});
+  return [
+    {value:'503-주시약', label:'cobas 503 — 주시약'},
+    {value:'503-소모', label:'cobas 503 — 소모시약'},
+    {value:'503-cal', label:'cobas 503 — CAL&QC'},
+    {value:'e801-주시약', label:'cobas e801 — 주시약'},
+    {value:'e801-소모', label:'cobas e801 — 소모시약'},
+    {value:'e801-cal', label:'cobas e801 — CAL&QC'},
+    {value:'b221-주시약', label:'cobas b221 — 주시약'},
+    {value:'b221-소모', label:'cobas b221 — 소모시약'},
+    {value:'b221-cal', label:'cobas b221 — CAL&QC'},
+    {value:'nx10n-주시약', label:'NX10N — 주시약'},
+    {value:'nx10n-소모', label:'NX10N — 소모시약'},
+    {value:'nx10n-cal', label:'NX10N — CAL&QC'}
+  ];
+}
+function getDefaultAddDeviceForPart(partId){
+  const targetPart = partId || 'chem';
+  const options = getAddDeviceOptionsByPart(targetPart);
+  if(!options.length) return '';
+  if(targetPart !== 'chem') return options[0].value;
+  const currentChemDevice = getCurrentAddDevice();
+  return options.some(opt=>opt.value===currentChemDevice) ? currentChemDevice : options[0].value;
+}
+function isAddDeviceValidForPart(device, partId){
+  if(!device) return false;
+  return getAddDeviceOptionsByPart(partId || 'chem').some(opt=>opt.value===device);
+}
+function buildAddDeviceOptions(selectedDevice, selectedPart){
+  const select = document.getElementById('new-device');
+  if(!select) return '';
+  const targetPart = selectedPart || 'chem';
+  let options = getAddDeviceOptionsByPart(targetPart);
+  let safeDevice = isAddDeviceValidForPart(selectedDevice, targetPart) ? selectedDevice : '';
+  if(!safeDevice) safeDevice = getDefaultAddDeviceForPart(targetPart);
+  if(!options.length && safeDevice){
+    options = [{value:safeDevice, label:getDeviceLabelForAddModal(safeDevice)}];
   }
   select.innerHTML = options.map(opt=>`<option value="${opt.value}">${opt.label}</option>`).join('');
-  if(options.some(opt=>opt.value===selectedDevice)) select.value = selectedDevice;
+  if(options.some(opt=>opt.value===safeDevice)) select.value = safeDevice;
+  else if(options.length) select.value = options[0].value;
+  return select.value || safeDevice || '';
 }
 function getAddModalPartName(partId){
   if(partId === 'chem') return '화학';
@@ -2377,26 +2446,25 @@ function onAddPartChange(){
   const partSelect = document.getElementById('new-part');
   const contextEl = document.getElementById('new-add-context');
   const selectedPart = partSelect ? String(partSelect.value || 'chem') : 'chem';
-  buildAddDeviceOptions('', selectedPart);
-  const deviceSelect = document.getElementById('new-device');
-  const selectedDevice = deviceSelect ? String(deviceSelect.value || '') : '';
-  if(contextEl) contextEl.textContent = `현재 파트: ${getAddModalPartName(selectedPart)} · 현재 선택: ${getDeviceLabelForAddModal(selectedDevice)}`;
+  const safeDevice = buildAddDeviceOptions('', selectedPart);
+  if(contextEl) contextEl.textContent = `현재 파트: ${getAddModalPartName(selectedPart)} · 현재 선택: ${getDeviceLabelForAddModal(safeDevice)}`;
 }
 function showAddReagent(dv){
   const storageSelect = document.getElementById('new-storage');
   const nameInput = document.getElementById('new-name');
   const partSelect = document.getElementById('new-part');
   const contextEl = document.getElementById('new-add-context');
-  const selectedDevice = getCurrentAddDevice(dv);
-  const selectedPart = _currentPart || (String(selectedDevice||'').startsWith('custom-') ? (((S.customDevices||[]).find(d=>selectedDevice.startsWith(`custom-${d.id}-`))||{}).partId || 'chem') : 'chem');
+  const rawSelectedDevice = getCurrentAddDevice(dv);
+  const inferredPart = String(rawSelectedDevice||'').startsWith('custom-') ? (((S.customDevices||[]).find(d=>rawSelectedDevice.startsWith(`custom-${d.id}-`))||{}).partId || 'chem') : 'chem';
+  const selectedPart = _currentPart || inferredPart;
   const partName = getAddModalPartName(selectedPart);
 
   if(nameInput) nameInput.value = '';
   if(storageSelect) storageSelect.value = '냉장';
   buildAddPartOptions(selectedPart);
   if(partSelect) partSelect.value = selectedPart;
-  buildAddDeviceOptions(selectedDevice, selectedPart);
-  if(contextEl) contextEl.textContent = `현재 파트: ${partName} · 현재 선택: ${getDeviceLabelForAddModal(selectedDevice)}`;
+  const safeDevice = buildAddDeviceOptions(rawSelectedDevice, selectedPart);
+  if(contextEl) contextEl.textContent = `현재 파트: ${partName} · 현재 선택: ${getDeviceLabelForAddModal(safeDevice)}`;
 
   const addModal = document.getElementById('add-modal');
   if(addModal){
@@ -2428,7 +2496,9 @@ function saveReagent(){
   const deviceSelect = document.getElementById('new-device');
   let device = deviceSelect ? String(deviceSelect.value||'').trim() : '';
 
-  if(!device) device = getCurrentAddDevice();
+  if(!device || !isAddDeviceValidForPart(device, selectedPart)){
+    device = buildAddDeviceOptions(device, selectedPart) || getDefaultAddDeviceForPart(selectedPart);
+  }
 
   if(!device){ toast('현재 장비 정보를 찾을 수 없어요','w'); return; }
 
@@ -2576,8 +2646,12 @@ function printLedger(dv){
     'e801-주시약': 'cobas e801 — 주시약',
     'e801-소모':  'cobas e801 — 소모시약',
     'e801-cal':   'cobas e801 — CAL&QC',
-    'b221-주시약': 'cobas b221',
-    'nx10n-주시약':'NX10N',
+    'b221-주시약': 'cobas b221 — 주시약',
+    'b221-소모': 'cobas b221 — 소모시약',
+    'b221-cal': 'cobas b221 — CAL&QC',
+    'nx10n-주시약':'NX10N — 주시약',
+    'nx10n-소모':'NX10N — 소모시약',
+    'nx10n-cal':'NX10N — CAL&QC',
   }[dv] || dv;
   const now = new Date();
   const ym = now.getFullYear()+'년 '+(now.getMonth()+1)+'월';
@@ -4324,7 +4398,6 @@ const DV_MAP = {
   "Vita": "Vitamin-D total Ⅲ 300T",
   "PreC": "PreClean M G2 2×2L Elecsys E2G",
   "ProC": "ProCell M G2 2×2L Elecsys E2G",
-  "Clea": "ISE Cleaning Solution 5*100ml",
   "Acti": "Activator for cobas c. Integra. c111",
   "ECO-": "ECO-D. 40T. cobas c pack green",
   "NaOH": "NaOH-D. cobas c pack green",
@@ -4345,170 +4418,16 @@ function dvMatchReagent(invoiceName) {
   const name = String(invoiceName || '').trim();
   if(!name) return null;
 
-  const nameU = name.toUpperCase();
-  const norm = dvNormalizeName(name);
-  const looseNorm = dvNormalizeNameLoose(name);
-
-  // 1) 등록 직후 포함해 가장 안전한 우선순위: 정확명 / 정규화명 완전일치
   const exact = S.reagents.find(r => String(r.name || '').trim() === name);
   if(exact) return exact;
 
+  const norm = dvNormalizeName(name);
   const exactNorm = S.reagents.find(r => dvNormalizeName(r.name) === norm);
   if(exactNorm) return exactNorm;
 
+  const looseNorm = dvNormalizeNameLoose(name);
   const exactLoose = S.reagents.find(r => dvNormalizeNameLoose(r.name) === looseNorm);
   if(exactLoose) return exactLoose;
-
-  // 2) 느슨한 포함 비교: 버전/공백/하이픈 차이 보정
-  const looseCandidates = S.reagents.filter(r => {
-    const rn = dvNormalizeNameLoose(r.name);
-    return rn && looseNorm && (rn.includes(looseNorm) || looseNorm.includes(rn));
-  });
-  if(looseCandidates.length === 1) return looseCandidates[0];
-
-  // 3) 토큰 겹침 점수 기반 비교
-  const invoiceTokens = dvTokenizeName(name);
-  if(invoiceTokens.length){
-    let best = null;
-    let bestScore = 0;
-    for(const r of S.reagents){
-      const rt = dvTokenizeName(r.name);
-      if(!rt.length) continue;
-      const overlap = invoiceTokens.filter(t => rt.includes(t));
-      let score = overlap.length;
-      if(score < 2) continue;
-      if(rt.includes(invoiceTokens[0])) score += 1;
-      if(invoiceTokens.includes(rt[0])) score += 1;
-      const ln = dvNormalizeNameLoose(r.name);
-      if(ln.startsWith(looseNorm) || looseNorm.startsWith(ln)) score += 2;
-      if(score > bestScore){
-        best = r;
-        bestScore = score;
-      }else if(score === bestScore){
-        best = null;
-      }
-    }
-    if(best && bestScore >= 3) return best;
-  }
-
-  // 정확한 키워드 매핑
-  const keywordMap = [
-    ["ISE Standard low",      "ISE Standard low 10x3ML"],
-    ["ISE Standard high",     "ISE Standard high 10x3ML"],
-    ["ISE Internal Standard", "ISE Internal Standard Gen.2 conc."],
-    ["ISE Reference",         "ISE Reference Electerolyte"],
-    ["ISE Cleaning",          "ISE Cleaning Solution 5*100ml"],
-    ["AUTO-TROL.PLUS B LEVEL 1", "AUTO-TROL.PLUS B LEVEL 1"],
-    ["AUTO-TROL.PLUS B LEVEL 2", "AUTO-TROL.PLUS B LEVEL 2"],
-    ["AUTO-TROL.PLUS B LEVEL 3", "AUTO-TROL.PLUS B LEVEL 3"],
-    ["HiSens RPR LTIA Calibrator", "HiSens RPR LTIA Calibrator"],
-    ["HiSens RPR LTIA Control",    "HiSens RPR LTIA Control"],
-    ["HiSens RPR LTIA",            "HiSens RPR LTIA"],
-    ["PreClean",    "PreClean M G2 2×2L Elecsys E2G"],
-    ["ProCell",     "ProCell M G2 2×2L Elecsys E2G"],
-    ["CleanCell",   "ISE Cleaning Solution 5*100ml"],
-    ["Vitamin D total G3 CS", "Vitamin-D total Ⅲ CS"],
-    ["Vitamin D total",       "Vitamin-D total Ⅲ 300T"],
-    ["AFP Elecsys",           "AFP Elecsys E2G 300 V2"],
-    ["Cfas",                  "CFas (AUTO CAL)"],
-    ["Homocysteine control",  "Homocysteine Control"],
-    ["Basic Wash",            "Basic Wash 2x2L"],
-    ["Activator for cobas",   "Activator for cobas c. Integra. c111"],
-    ["DEPROTEINIZER",         "DEPROTEINIZER (125ML)"],
-    ["A1CX3",                 "A1CX3. 200T. cobas C503"],
-    ["A1CD",                  "A1CD. cobas c503"],
-    ["CDC1",                  "CDC1. cobas c pack green"],
-    ["FLUID PACK S2",         "FLUID PACK S2"],
-    ["S1 RINSE",              "S1 RINSE SOLUTION(2PCS)"],
-    ["AFP",                   "AFP Elecsys E2G 300 V2"],
-    ["FP Elecsys",            "AFP Elecsys E2G 300 V2"],
-    ["CA 19-9",               "CA19-9 G2 300T"],
-    ["A 19-9",                "CA19-9 G2 300T"],
-    ["CA19-9",                "CA19-9 G2 300T"],
-    ["CEA Elecsys",           "CEA Elecsys E2G 300"],
-    ["EA Elecsys",            "CEA Elecsys E2G 300"],
-    ["Ferritin Elecsys",      "Ferritin Gen.2 300T"],
-    ["erritin Elecsys",       "Ferritin Gen.2 300T"],
-    ["FT4 G4 Elecsys",        "FT4 G4 Elecsys E2G 300"],
-    ["T4 G4 Elecsys",         "FT4 G4 Elecsys E2G 300"],
-    ["TSH Elecsys",           "TSH Elecsys E2G 300 V2"],
-    ["SH Elecsys",            "TSH Elecsys E2G 300 V2"],
-    ["Vitamin D total",       "Vitamin-D total Ⅲ 300T"],
-    ["HBsAg",                 "HBsAg G2 Elecsys E2G 300"],
-    ["Anti-HBs",              "Anti-HBs G2 Elecsys E2G 300"],
-    ["HIV duo",               "HIV duo Elecsys E2G 300"],
-    ["IV duo",                "HIV duo Elecsys E2G 300"],
-    ["PCT Brahms",            "PCT Brahms-Roche Elecsys E2G 300"],
-    ["proBNP",                "proBNP G2 Elecsys E2G 300"],
-    ["Troponin T",            "Troponin T hs Elecsys E2G 300"],
-    ["CK-MB Elecsys",         "CK-MB Elecsys E2G 100"],
-    ["K-MB Elecsys",          "CK-MB Elecsys E2G 100"],
-    ["Anti-CCP Elecsys",      "Anti-CCP Elecsys E2G 100"],
-    ["Total PSA",             "Total PSA Elecsys E2G 300"],
-    ["Anti-HAV",              "Anti-HAV G2 Elecsys E2G 300"],
-    ["Anti-HCV",              "Anti-HCV G2 Elecsys E2G 300"],
-    ["AssayTip",              "AssayTip/Assaycup tray"],
-    ["Diluent Universal",     "Diluent Universal E2G"],
-    ["SI2",                   "SI2. 14500T. cobas c pack green"],
-    ["LAMP HALOGEN",          "LAMP HALOGEN ASSY 12V/50W"],
-    ["Multiplate",            "Multiplate Test Cells"],
-    ["S-Monovette",           "S-Monovette 1.6ml Hirudin"],
-    ["Tips for e-line",       "Tips for e-line Pitette"],
-    ["LB2",                   "ALB2. 750T. cobas c503"],
-    ["ILT3",                  "BILT3. 1050T. cobas c503"],
-    ["H3/ETH/CO2 Control N",  "NH3/ETH/CO2 Control N"],
-    ["H3/ETH/CO2 Control A",  "NH3/ETH/CO2 Control A"],
-    ["fas(Auto Cal)",         "CFas (AUTO CAL)"],
-    ["omocysteine control",   "Homocysteine Control"],
-    ["SE Standard low",       "ISE Standard low 10x3ML"],
-    ["SE Standard high",      "ISE Standard high 10x3ML"],
-    ["CX3",                   "A1CX3. 200T. cobas C503"],
-    ["RPR LTIA",              "HiSens RPR LTIA"],
-    ["V2.1 Elecsys E2G 300 V2", "Total PSA Elecsys E2G 300"],
-    ["T3 Elecsys",            "T3 300T"],
-    ["T3 300T",               "T3 300T"],
-    ["CEA CS",                "CEA CS Gen.2"],
-    ["FT4 G4 CS",             "FT4 G4 CS Elecsys"],
-    ["TSH CS",                "TSH CS Elecsys V3"],
-    ["Ferritin CS",           "Ferritin CS Gen.2"],
-    ["Vitamin-D total Ⅲ CS",  "Vitamin-D total Ⅲ CS"],
-    ["Vitamin D total G3 CS", "Vitamin-D total Ⅲ CS"],
-    ["CK-MB CS",              "CK-MB Elecsys E2G 100"],
-    ["CC 25mM",               "CC 25mM cobas t 50ml"],
-  ];
-
-  for (const [kw, appName] of keywordMap) {
-    if (nameU.includes(kw.toUpperCase())) {
-      const r = S.reagents.find(x => x.name === appName)
-        || S.reagents.find(x => dvNormalizeName(x.name) === dvNormalizeName(appName))
-        || S.reagents.find(x => dvNormalizeNameLoose(x.name) === dvNormalizeNameLoose(appName));
-      if(r) return r;
-    }
-  }
-
-  const alphaKey = nameU.replace(/[\d,.]/g,'').trim().split(/\s+/)[0];
-  const unitKey  = nameU.match(/(\d+T|\d+ML|\d+PCS|\d+x\d+[LM])/i)?.[1]||'';
-
-  if(alphaKey.length >= 2 && unitKey){
-    const byAlphaUnit = S.reagents.filter(r=>{
-      const rAlpha = r.name.toUpperCase().replace(/[\d,.]/g,'').trim().split(/\s+/)[0];
-      const rUnit  = r.unit ? r.unit.toUpperCase() : '';
-      return rAlpha.includes(alphaKey.slice(0,3)) && rUnit.includes(unitKey.replace(/[^0-9TMLx]/gi,'').toUpperCase());
-    });
-    if(byAlphaUnit.length === 1) return byAlphaUnit[0];
-  }
-
-  if(alphaKey.length >= 3){
-    const byAlpha = S.reagents.filter(r=>{
-      const rAlpha = r.name.toUpperCase().replace(/[\d,.]/g,'').trim().split(/\s+/)[0];
-      return rAlpha.includes(alphaKey.slice(0,3)) || alphaKey.includes(rAlpha.slice(0,3));
-    });
-    if(byAlpha.length === 1) return byAlpha[0];
-  }
-
-  const key4 = name.slice(0,4).toUpperCase();
-  const matches4 = S.reagents.filter(r => r.name.slice(0,4).toUpperCase() === key4);
-  if(matches4.length === 1) return matches4[0];
 
   return null;
 }
@@ -4693,32 +4612,31 @@ async function dvParsePDF(input) {
     const pdf = await pdfjsLib.getDocument({data: typedArray}).promise;
 
     const STOP = ['결제계좌','현잔액','인수인','이하여백','이 하 여 백'];
-    const CODE_RE = /^[A-Za-z][0-9]-\d+[a-zA-Z]?\d*(.*)$/;
     const parsed = [];
 
-    // 페이지별로 처리
     for (let p = 1; p <= pdf.numPages; p++) {
       const page = await pdf.getPage(p);
       const vp = page.getViewport({scale:1});
       const W = vp.width, H = vp.height;
       const tc = await page.getTextContent({includeMarkedContent: false, disableCombineTextItems: true});
 
-      // y 그루핑 (6pt - 폰트크기 차이 대응)
-      const rows = {};
-      tc.items.filter(it=>it.str.trim()).forEach(it=>{
+      // y 2pt 단위 그루핑 (윗줄/본행/아랫줄 분리)
+      const lines = {};
+      tc.items.forEach(it=>{
+        if(!it.str || !it.str.trim()) return;
         const x = it.transform[4];
         const y = H - it.transform[5];
-        const yk = Math.round(y / 6) * 6;
-        if(!rows[yk]) rows[yk] = [];
-        rows[yk].push({text: it.str.trim(), x, xRatio: x/W});
+        const yk = Math.round(y / 2) * 2;
+        if(!lines[yk]) lines[yk] = [];
+        lines[yk].push({text: it.str.trim(), x, xRatio: x/W});
       });
 
-      const sortedYk = Object.keys(rows).map(Number).sort((a,b)=>a-b);
+      const sortedYk = Object.keys(lines).map(Number).sort((a,b)=>a-b);
 
-      // No 헤더행 찾기
+      // 헤더 찾기
       let headerY = null;
       for(const yk of sortedYk){
-        if(rows[yk].some(i=>i.xRatio<0.05 && (i.text==='No'||i.text==='NO'))){
+        if(lines[yk].some(i => i.xRatio<0.05 && (i.text==='No'||i.text==='NO'))){
           headerY = yk; break;
         }
       }
@@ -4728,77 +4646,82 @@ async function dvParsePDF(input) {
       let stopY = 999999;
       for(const yk of sortedYk){
         if(yk <= headerY) continue;
-        const texts = rows[yk].map(i=>i.text).join(' ');
-        if(STOP.some(s=>texts.includes(s))){ stopY = yk; break; }
+        const text = lines[yk].map(i=>i.text).join(' ');
+        if(STOP.some(s=>text.includes(s))){ stopY = yk; break; }
       }
 
-      // No행 목록
+      // No 본행 목록 (코드 컬럼 + 숫자 No 모두 있는 줄)
       const noRows = [];
       for(const yk of sortedYk){
         if(yk <= headerY || yk >= stopY) continue;
-        const row = rows[yk];
-        const noCell = row.find(i=>i.xRatio<0.05 && /^\d+$/.test(i.text));
+        const row = lines[yk];
+        const noCell = row.find(i => i.xRatio<0.05 && /^\d+$/.test(i.text));
         if(noCell) noRows.push({yk, no: parseInt(noCell.text), row});
       }
 
-      noRows.forEach(({yk, no, row}, idx)=>{
-        // 코드셀에서 상품명 접두어 + LOT 추출
-        const codeCell = row.find(i=>i.xRatio>0.055 && i.xRatio<0.20);
-        let prefix = '';
-        let lotFromCode = '';
-        if(codeCell){
-          const m = codeCell.text.match(CODE_RE);
-          if(m && m[1].trim()){
-            const after = m[1].trim();
-            const lotM = after.match(/([0-9]{6,}[a-zA-Z]?[0-9]*)$/);
-            if(lotM){
-              lotFromCode = lotM[1];
-              prefix = after.replace(lotM[1],'').replace(/[,\s]+$/,'').trim();
-            } else {
-              prefix = after;
-            }
-          }
-        }
-
-        // 같은 행 상품명
-        const inline = row.filter(i=>i.xRatio>0.155 && i.xRatio<0.36)
-                          .sort((a,b)=>a.x-b.x).map(i=>i.text);
-        let nameParts = (prefix ? [prefix] : []).concat(inline);
-
-        // 이전 No행 ~ 현재 No행 사이 연속행
+      noRows.forEach((nr, idx) => {
+        const yk = nr.yk;
         const prevYk = idx>0 ? noRows[idx-1].yk : headerY;
-        for(const yk2 of sortedYk){
-          if(yk2 <= prevYk || yk2 >= yk || yk2 >= stopY) continue;
-          const row2 = rows[yk2];
-          if(row2.some(i=>i.xRatio<0.05 && /^\d+$/.test(i.text))) continue;
-          const extra = row2.filter(i=>i.xRatio>0.10 && i.xRatio<0.36)
-                           .sort((a,b)=>a.x-b.x).map(i=>i.text);
-          if(extra.length) nameParts = extra.concat(nameParts);
+        const nextYk = idx+1<noRows.length ? noRows[idx+1].yk : stopY;
+
+        // 이 No에 속하는 줄 범위 (인접 No의 중간점)
+        const upLimit = (prevYk + yk) / 2;
+        const downLimit = (yk + nextYk) / 2;
+
+        // 관련 줄 모두 수집
+        const rowLines = sortedYk
+          .filter(y => y > upLimit && y < downLimit)
+          .map(y => ({yk:y, words: lines[y]}));
+
+        // 포장단위 (xRatio ~0.363)
+        let unit = '';
+        for(const ln of rowLines){
+          const u = ln.words.find(w => w.xRatio>=0.350 && w.xRatio<=0.380);
+          if(u){ unit = u.text; break; }
         }
 
-        const name = nameParts.join(' ').trim();
-        const qty  = (row.find(i=>i.xRatio>=0.48 && i.xRatio<0.54 && /^\d+$/.test(i.text))||{text:'1'}).text;
+        // 이름: 0.155~0.50 구간, 포장단위 제외, 각 줄별로 수집
+        const nameLines = [];
+        for(const ln of rowLines){
+          const ws = ln.words
+            .filter(w => w.xRatio>=0.155 && w.xRatio<=0.50)
+            .sort((a,b)=>a.x-b.x);
+          if(!ws.length) continue;
+          const text = ws.map(w=>w.text).join(' ').trim();
+          if(!text || text===unit || text.length<=1) continue;
+          nameLines.push({yk:ln.yk, text});
+        }
+        nameLines.sort((a,b)=>a.yk-b.yk);
 
-        // 유효기간: 8자리 숫자 중 가장 오른쪽
-        const eightDigits = row.filter(i=> /^\d{8}$/.test(i.text)).sort((a,b)=>a.x-b.x);
-        if(!eightDigits.length) return;
-        const expW = eightDigits[eightDigits.length-1];
+        let name = nameLines.map(l=>l.text).join(' ').trim();
+        name = name.replace(/[,\s]+$/,'').replace(/\s+/g,' ').trim();
+        const rawName = dvComposeParsedRawName(name, unit);
+        if(!rawName) return;
 
-        // LOT: 유효기간보다 x가 작고 쉼표 없는 것 중 가장 오른쪽
-        const lotCands = row.filter(i=>
-          i.x < expW.x - 5 &&
-          i.xRatio > 0.70 &&
-          !i.text.includes(',')
-        );
-        const lotFromRow = lotCands.length ? lotCands.reduce((a,b)=>a.x>b.x?a:b).text : '';
-        const lot = lotFromRow || lotFromCode;
+        // 수량 (본행, xRatio 0.48~0.54)
+        const mainRow = nr.row;
+        const qw = mainRow.find(w => w.xRatio>=0.48 && w.xRatio<=0.54 && /^\d+$/.test(w.text));
+        const qty = qw ? qw.text : '1';
 
-        const e = expW.text;
-        const exp = e.slice(0,4)+'-'+e.slice(4,6)+'-'+e.slice(6,8);
-        parsed.push({rawName:name, reagent:dvMatchReagent(name), qty:parseInt(qty)||1, lot, exp});
+        // 유효기간 (8자리 숫자, 가장 오른쪽)
+        let exp = '';
+        for(const ln of rowLines){
+          const ed = ln.words.filter(w=>/^\d{8}$/.test(w.text)).sort((a,b)=>a.x-b.x);
+          if(ed.length){ const e=ed[ed.length-1].text; exp=e.slice(0,4)+'-'+e.slice(4,6)+'-'+e.slice(6,8); break; }
+        }
+
+        // LOT (xRatio 0.70~0.83, 쉼표 없음)
+        let lot = '';
+        for(const ln of rowLines){
+          const lc = ln.words.filter(w=>w.xRatio>0.70&&w.xRatio<0.83&&!w.text.includes(','));
+          if(lc.length){ lot=lc.sort((a,b)=>a.x-b.x)[lc.length-1].text; break; }
+        }
+
+        parsed.push({rawName, reagent:dvMatchReagent(rawName), qty:parseInt(qty)||1, lot, exp});
       });
     }
 
+    console.log('[PDF파싱결과]', parsed.map(r=>({name:r.rawName,reagent:r.reagent?.name||'미매핑',qty:r.qty,lot:r.lot,exp:r.exp})));
     document.getElementById('dv-paste-text').value =
       parsed.map((r,i)=>`${i+1}. ${r.rawName} | qty:${r.qty} | LOT:${r.lot} | exp:${r.exp}`).join('\n');
 
@@ -4854,43 +4777,78 @@ function dvRenderParsedResult() {
     resultEl.innerHTML = '<div style="text-align:center;color:var(--tdim);font-size:12px;padding:20px;">파싱된 항목 없음</div>';
     return;
   }
-  const matched   = _dvParsedRows.filter(r=>r.reagent && r.lot && r.exp);
-  const noLotExp  = _dvParsedRows.filter(r=>r.reagent && (!r.lot||!r.exp));
-  const unmatched = _dvParsedRows.filter(r=>!r.reagent);
-  resultEl.innerHTML = `
-    <div style="font-size:11px;color:var(--tdim);margin-bottom:6px;">매핑 성공 ${matched.length}개 / 시약목록없음 ${unmatched.length}개${noLotExp.length?` / LOT·유효기간 없어 제외 ${noLotExp.length}개`:''}</div>
-    ${matched.map(r=>`
-      <div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:6px;">
-        <div style="font-weight:700;color:var(--accent);">${esc(r.reagent.name)}</div>
-        <div style="color:var(--tdim);font-size:10px;margin:2px 0;">${esc(r.rawName)}</div>
-        <div style="display:flex;gap:8px;margin-top:4px;font-size:11px;">
-          <span>수량 <b>${r.qty}</b></span>
-          <span>LOT <b>${esc(r.lot)}</b></span>
-          <span>유효기간 <b>${r.exp}</b></span>
-        </div>
-      </div>
-    `).join('')}
-    ${noLotExp.length?`<div style="font-size:11px;color:var(--yellow);margin-top:6px;">⚠ LOT·유효기간 없어 제외: ${noLotExp.map(r=>esc(r.reagent.name)).join(', ')}</div>`:''}
-    ${unmatched.length?`
-      <div style="margin-top:8px;">
-        <div style="font-size:11px;color:var(--tdim);margin-bottom:6px;">시약목록없음(제외)</div>
-        ${unmatched.map(r=>`
-          <div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:6px;">
-            <div style="font-size:12px;color:var(--text);font-weight:600;line-height:1.45;word-break:break-word;">${esc(r.rawName)}</div>
-            <div style="display:flex;gap:8px;margin-top:8px;">
-              <button type="button" onclick="dvRegisterUnmatchedEncoded('${encodeURIComponent(r.rawName)}')" style="flex:1;padding:9px 10px;background:var(--accent);border:none;border-radius:8px;color:#000;font-size:12px;font-weight:700;cursor:pointer;">이 이름으로 등록</button>
-            </div>
-          </div>
-        `).join('')}
-      </div>`:''}
-  `;
-  toast(matched.length?`${matched.length}개 파싱 완료`:'매핑된 시약 없음', matched.length?'s':'w');
+  _dvRenderFiltered('');
+  const _mc = _dvParsedRows.filter(r=>r.reagent&&r.lot&&r.exp).length;
+  toast(_mc?`${_mc}개 파싱 완료`:'매핑된 시약 없음', _mc?'s':'w');
   // 명세서 날짜 자동 추출
   const invDate = extractInvoiceDate(_dvRawText||'');
   if(invDate) {
     const el = document.getElementById('dv-date2');
     if(el && invDate) { el.value = invDate; toast('명세서 날짜 자동입력: '+invDate, 's'); }
   }
+}
+
+let _dvSearchQuery = '';
+function _dvRenderFiltered(q) {
+  _dvSearchQuery = (q||'').toLowerCase().trim();
+  const resultEl = document.getElementById('dv-parse-result');
+  const sq = _dvSearchQuery;
+
+  // 검색창 표시
+  const searchWrap = document.getElementById('dv-result-search-wrap');
+  if(searchWrap) searchWrap.style.display = 'block';
+
+  const allMatched   = _dvParsedRows.filter(r=>r.reagent && r.lot && r.exp);
+  const allNoLotExp  = _dvParsedRows.filter(r=>r.reagent && (!r.lot||!r.exp));
+  const allUnmatched = _dvParsedRows.filter(r=>!r.reagent);
+
+  const matched   = sq ? allMatched.filter(r=>r.reagent.name.toLowerCase().includes(sq)||r.rawName.toLowerCase().includes(sq)) : allMatched;
+  const noLotExp  = sq ? allNoLotExp.filter(r=>r.reagent.name.toLowerCase().includes(sq)||r.rawName.toLowerCase().includes(sq)) : allNoLotExp;
+  const unmatched = sq ? allUnmatched.filter(r=>r.rawName.toLowerCase().includes(sq)) : allUnmatched;
+
+  resultEl.innerHTML = `
+    <div style="font-size:11px;color:var(--tdim);margin-bottom:8px;">매핑 성공 ${allMatched.length}개 / 시약목록없음 ${allUnmatched.length}개${allNoLotExp.length?` / LOT·유효기간 없어 제외 ${allNoLotExp.length}개`:''}</div>
+
+    ${unmatched.length?`
+      <div style="margin-bottom:10px;">
+        <div style="font-size:11px;color:var(--red);font-weight:700;margin-bottom:6px;">⚠ 시약목록없음 ${unmatched.length}개 — 직접 등록 필요</div>
+        ${unmatched.map(r=>`
+          <div style="background:var(--s2);border:1px solid var(--red);border-radius:10px;padding:10px 12px;margin-bottom:6px;">
+            <div style="font-size:12px;color:var(--text);font-weight:600;line-height:1.45;word-break:break-word;">${esc(r.rawName)}</div>
+            <div style="display:flex;gap:8px;margin-top:4px;font-size:11px;color:var(--tdim);">
+              <span>수량 <b style="color:var(--text);">${r.qty}</b></span>
+              ${r.lot?`<span>LOT <b style="color:var(--text);">${esc(r.lot)}</b></span>`:''}
+              ${r.exp?`<span>유효기간 <b style="color:var(--text);">${r.exp}</b></span>`:''}
+            </div>
+            <div style="display:flex;gap:8px;margin-top:8px;">
+              <button type="button" onclick="dvRegisterUnmatchedEncoded('${encodeURIComponent(r.rawName)}')" style="flex:1;padding:9px 10px;background:var(--accent);border:none;border-radius:8px;color:#000;font-size:12px;font-weight:700;cursor:pointer;">이 이름으로 등록</button>
+            </div>
+          </div>
+        `).join('')}
+      </div>`:``}
+
+    ${noLotExp.length?`<div style="font-size:11px;color:var(--yellow);margin-bottom:8px;">⚠ LOT·유효기간 없어 제외: ${noLotExp.map(r=>esc(r.reagent.name)).join(', ')}</div>`:''}
+
+    ${matched.length?`
+      <details open>
+        <summary style="font-size:11px;color:var(--tdim);cursor:pointer;margin-bottom:6px;list-style:none;display:flex;align-items:center;gap:4px;">
+          <span style="color:var(--accent);">▾</span> 매핑 성공 ${matched.length}개
+        </summary>
+        ${matched.map(r=>`
+          <div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:6px;">
+            <div style="font-weight:700;color:var(--accent);">${esc(r.reagent.name)}</div>
+            <div style="color:var(--tdim);font-size:10px;margin:2px 0;">${esc(r.rawName)}</div>
+            <div style="display:flex;gap:8px;margin-top:4px;font-size:11px;">
+              <span>수량 <b>${r.qty}</b></span>
+              <span>LOT <b>${esc(r.lot)}</b></span>
+              <span>유효기간 <b>${r.exp}</b></span>
+            </div>
+          </div>
+        `).join('')}
+      </details>`:``}
+
+    ${sq && !matched.length && !unmatched.length && !noLotExp.length ? `<div style="text-align:center;color:var(--tdim);font-size:12px;padding:12px;">"${esc(sq)}" 검색 결과 없음</div>` : ''}
+  `;
 }
 
 // 거래명세서 텍스트 파싱 (No + 상품명 + 수량 + LOT + 유효기간)
@@ -4993,6 +4951,66 @@ function dvParseInvoiceText(text) {
   toast(matched.length?`${matched.length}개 파싱 완료`:'LOT·유효기간 있는 시약 없음', matched.length?'s':'w');
 }
 
+function dvNormParseText(v){
+  return String(v||'').replace(/\s+/g,' ').trim();
+}
+
+function dvCleanParsedSpec(v){
+  return dvNormParseText(v)
+    .replace(/\s*\(\s*/g,'(')
+    .replace(/\s*\)\s*/g,')')
+    .replace(/\s*([xX])\s*/g,'$1')
+    .replace(/\b(\d+)\s*(T|TESTS?|ML|UL|KIT|KITS|STRIPS?|CARDS?|VIALS?|SET|BOX|L)\b/gi, function(_, n, u){ return n + u.toUpperCase(); });
+}
+
+function dvExtractParsedInlineSpec(name){
+  const src = dvNormParseText(name);
+  if(!src) return '';
+  const m = src.match(/\(?\b(\d+\s*(?:T|TESTS?|ML|UL|KIT|KITS|STRIPS?|CARDS?|VIALS?|SET|BOX|L))\b\)?/i);
+  return m ? dvCleanParsedSpec(m[1]) : '';
+}
+
+function dvRemoveParsedSpec(name, spec){
+  let out = dvNormParseText(name);
+  const cleanSpec = dvCleanParsedSpec(spec);
+  if(!out || !cleanSpec) return out;
+  const escSpec = cleanSpec.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  out = out.replace(new RegExp('\\(?'+ escSpec +'\\)?', 'ig'), ' ');
+  out = out.replace(/\s+,/g, ',').replace(/,\s*,+/g, ', ').replace(/\s+/g,' ').trim();
+  out = out.replace(/^,\s*|,\s*$/g,'').trim();
+  return out;
+}
+
+function dvComposeParsedRawName(name, spec){
+  let baseName = dvNormParseText(name);
+  let cleanSpec = dvCleanParsedSpec(spec || '');
+  if(!cleanSpec) cleanSpec = dvExtractParsedInlineSpec(baseName);
+
+  const chemicalMatch = baseName.match(/^(.*?)(?:\s*,\s*|\s+)(cobas\s*c(?:503|\s*pack(?:\s*green)?)?)$/i);
+  if(chemicalMatch){
+    const device = dvNormParseText(chemicalMatch[2]);
+    const left = dvRemoveParsedSpec(chemicalMatch[1], cleanSpec);
+    if(cleanSpec) return `${left}, ${cleanSpec}, ${device}`.replace(/\s+/g,' ').trim();
+    return `${left}, ${device}`.replace(/\s+/g,' ').trim();
+  }
+
+  if(/\bcobas\s*t\b/i.test(baseName)){
+    const left = dvRemoveParsedSpec(baseName, cleanSpec);
+    return cleanSpec ? `${left} ${cleanSpec}`.replace(/\s+/g,' ').trim() : left;
+  }
+
+  if(/\bcard\b/i.test(baseName)){
+    const left = dvRemoveParsedSpec(baseName, cleanSpec);
+    return cleanSpec ? `${left} (${cleanSpec})`.replace(/\s+/g,' ').trim() : left;
+  }
+
+  if(cleanSpec){
+    const stripped = dvRemoveParsedSpec(baseName, cleanSpec);
+    return `${stripped}, ${cleanSpec}`.replace(/\s+/g,' ').trim();
+  }
+  return baseName;
+}
+
 async function dvParseExcel(input) {
   const file = input.files[0];
   if (!file) return;
@@ -5002,71 +5020,54 @@ async function dvParseExcel(input) {
     const workbook = XLSX.read(arrayBuffer, {type: 'array'});
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(sheet, {header:1, defval:''});
-    // 헤더 찾기 (상품명 컬럼 위치 탐색)
-    let nameCol=-1, qtyCol=-1, lotCol=-1, expCol=-1;
+
+    let nameCol=-1, specCol=-1, qtyCol=-1, lotCol=-1, expCol=-1;
     let headerRow=-1;
+
+    const norm = v => dvNormParseText(v);
+    const normKey = v => norm(v).toLowerCase().replace(/[\s._-]+/g,'');
+
     for(let i=0;i<rows.length;i++){
-      const row = rows[i].map(c=>String(c).trim());
-      if(row.some(c=>c.includes('상품명')||c.includes('품명'))){
+      const row = rows[i].map(c=>norm(c));
+      const keys = row.map(c=>normKey(c));
+      if(keys.some(k=>k.includes('상품명')||k.includes('품명'))){
         headerRow=i;
-        row.forEach((c,j)=>{
-          if(c.includes('상품명')||c.includes('품명')) nameCol=j;
-          if(c.includes('수량')) qtyCol=j;
-          if(c.includes('제조번호')||c.includes('LOT')||c.includes('lot')) lotCol=j;
-          if(c.includes('유효기간')) expCol=j;
+        keys.forEach((k,j)=>{
+          if(k.includes('상품명')||k.includes('품명')) nameCol=j;
+          if(k.includes('포장단위')||k.includes('규격')) specCol=j;
+          if(k.includes('수량')) qtyCol=j;
+          if(k.includes('제조번호')||k=='lot'||k.includes('lot#')||k.includes('lot번호')) lotCol=j;
+          if(k.includes('유효기간')||k=='exp'||k=='exp.') expCol=j;
         });
         break;
       }
     }
-    // 헤더 못찾으면 기본값 (No/코드/상품명/포장단위/수량/단가/금액/제조번호/유효기간)
-    if(nameCol<0){ nameCol=2; qtyCol=4; lotCol=7; expCol=8; headerRow=0; }
-    // 데이터 행 파싱
-    let lines = [];
+
+    if(nameCol<0){ nameCol=2; specCol=3; qtyCol=4; lotCol=7; expCol=8; headerRow=0; }
+    if(specCol<0) specCol = nameCol+1;
+
+    let parsed = [];
     for(let i=headerRow+1;i<rows.length;i++){
       const row = rows[i];
-      // 상품명: 줄바꿈 제거, 공백 정리
-      const name = String(row[nameCol]||'').replace(/\n/g,' ').replace(/\s+/g,' ').trim();
+      const first = norm(row[0]);
+      const name = norm(row[nameCol]);
       if(!name) continue;
-      // 종료 조건
-      if(name.includes('이 하 여 백')||name.includes('이하여백')||name==='합 계'||name==='합계') break;
-      // No 컬럼이 있고 숫자가 아니면 스킵 (헤더 잔여 등)
-      if(row[0]!==undefined && row[0]!=='' && isNaN(parseInt(row[0]))) continue;
-      // 수량: 정수만, 포장단위 컬럼 혼동 방지
+      if(/이\s*하\s*여\s*백|이하여백|합\s*계|합계/.test(name)) break;
+      if(first && !/^\d+$/.test(first)) continue;
+
+      const spec = dvCleanParsedSpec(row[specCol]);
+      const rawName = dvComposeParsedRawName(name, spec);
       const qtyRaw = row[qtyCol];
-      const qty = (typeof qtyRaw === 'number') ? Math.round(qtyRaw) : (parseInt(String(qtyRaw||''))||1);
-      const lot = lotCol>=0 ? String(row[lotCol]||'').trim() : '';
-      const expRaw = expCol>=0 ? String(row[expCol]||'').trim().replace(/[^0-9]/g,'') : '';
-      const exp = expRaw.length===8 ? expRaw.slice(0,4)+'-'+expRaw.slice(4,6)+'-'+expRaw.slice(6,8) : expRaw;
-      lines.push({name, qty, lot, exp});
+      const qty = (typeof qtyRaw === 'number') ? Math.round(qtyRaw) : (parseInt(String(qtyRaw||'').replace(/[^0-9-]/g,'')) || 1);
+      const lot = lotCol>=0 ? norm(row[lotCol]) : '';
+      const expDigits = expCol>=0 ? String(row[expCol]||'').replace(/[^0-9]/g,'') : '';
+      const exp = expDigits.length===8 ? `${expDigits.slice(0,4)}-${expDigits.slice(4,6)}-${expDigits.slice(6,8)}` : '';
+      parsed.push({rawName, reagent: dvMatchReagent(rawName), qty, lot, exp});
     }
-    toast(lines.length+'개 항목 파싱', 's');
-    // 매핑
-    _dvParsedRows = lines.map(l=>({
-      rawName: l.name,
-      reagent: dvMatchReagent(l.name),
-      qty: l.qty,
-      lot: l.lot,
-      exp: l.exp
-    }));
-    // 결과 렌더링
-    const resultEl = document.getElementById('dv-parse-result');
-    const matched = _dvParsedRows.filter(r=>r.reagent);
-    const unmatched = _dvParsedRows.filter(r=>!r.reagent);
-    resultEl.innerHTML = `
-      <div style="font-size:11px;color:var(--tdim);margin-bottom:6px;">매핑 성공 ${matched.length}개 / 미매핑 ${unmatched.length}개</div>
-      ${matched.map(r=>`
-        <div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:6px;">
-          <div style="font-weight:700;color:var(--accent);">${esc(r.reagent.name)}</div>
-          <div style="color:var(--tdim);font-size:10px;margin:2px 0;">${esc(r.rawName)}</div>
-          <div style="display:flex;gap:8px;margin-top:4px;font-size:11px;">
-            <span>수량 <b>${r.qty}</b></span>
-            <span>LOT <b>${esc(r.lot)}</b></span>
-            <span>유효기간 <b>${r.exp}</b></span>
-          </div>
-        </div>
-      `).join('')}
-      ${unmatched.length?`<div style="font-size:10px;color:var(--tdim);margin-top:8px;">미매핑: ${unmatched.map(r=>esc(r.rawName)).join(', ')}</div>`:''}
-    `;
+
+    _dvParsedRows = parsed;
+    _dvRawText = parsed.map(r=>r.rawName).join(' ');
+    dvRenderParsedResult();
   } catch(e) {
     toast('오류: '+e.message, 'e');
     console.error(e);
@@ -5080,7 +5081,20 @@ function dvParseContent(text) {
   const resultEl = document.getElementById('dv-parse-result');
 
   for (const line of lines) {
-    // 형식: 상품명 수량 LOT YYYYMMDD
+    const pipeMatch = line.match(/^\s*(?:\d+\.\s*)?(.+?)\s*\|\s*qty\s*:\s*(\d+)\s*\|\s*LOT\s*:\s*([^|]*)\|\s*exp\s*:\s*([0-9\-]{8,10})\s*$/i);
+    if (pipeMatch) {
+      const rawName = dvComposeParsedRawName(pipeMatch[1], '');
+      const qty = parseInt(pipeMatch[2], 10) || 1;
+      const lot = dvNormParseText(pipeMatch[3]);
+      let exp = pipeMatch[4].trim();
+      if(/^\d{8}$/.test(exp)) exp = `${exp.slice(0,4)}-${exp.slice(4,6)}-${exp.slice(6,8)}`;
+      if(rawName) {
+        const reagent = dvMatchReagent(rawName);
+        _dvParsedRows.push({ rawName, reagent, qty, lot, exp });
+      }
+      continue;
+    }
+
     const expMatch = line.match(/(\d{8})\s*$/);
     if (!expMatch) continue;
     const expRaw = expMatch[1];
@@ -5092,7 +5106,7 @@ function dvParseContent(text) {
 
     const lot = parts[parts.length-1];
     const qty = parseInt(parts[parts.length-2])||1;
-    const rawName = parts.slice(0, parts.length-2).join(' ').trim();
+    const rawName = dvComposeParsedRawName(parts.slice(0, parts.length-2).join(' ').trim(), '');
     if(!rawName || rawName.length < 2) continue;
 
     const reagent = dvMatchReagent(rawName);
@@ -5122,8 +5136,26 @@ function dvParseContent(text) {
         </div>
       </div>
     `).join('')}
-    ${unmatched.length ? `<div style="font-size:11px;color:var(--tdim);margin-top:8px;">미매핑 (등록 안 됨): ${unmatched.map(r=>esc(r.rawName)).join(', ')}</div>` : ''}
+    ${unmatched.length ? `
+      <div style="margin-top:8px;">
+        <div style="font-size:11px;color:var(--tdim);margin-bottom:6px;">시약목록없음(제외)</div>
+        ${unmatched.map(r=>`
+          <div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:6px;">
+            <div style="font-size:12px;color:var(--text);font-weight:600;line-height:1.45;word-break:break-word;">${esc(r.rawName)}</div>
+            <div style="display:flex;gap:8px;margin-top:4px;font-size:11px;color:var(--tdim);">
+              <span>수량 <b style="color:var(--text);">${r.qty}</b></span>
+              ${r.lot?`<span>LOT <b style="color:var(--text);">${esc(r.lot)}</b></span>`:''}
+              ${r.exp?`<span>유효기간 <b style="color:var(--text);">${r.exp}</b></span>`:''}
+            </div>
+            <div style="display:flex;gap:8px;margin-top:8px;">
+              <button type="button" onclick="dvRegisterUnmatchedEncoded('${encodeURIComponent(r.rawName)}')" style="flex:1;padding:9px 10px;background:var(--accent);border:none;border-radius:8px;color:#000;font-size:12px;font-weight:700;cursor:pointer;">이 이름으로 등록</button>
+            </div>
+          </div>
+        `).join('')}
+      </div>` : ''}
   `;
+  const sw = document.getElementById('dv-result-search-wrap');
+  if(sw) sw.style.display = 'block';
 }
 
 function extractInvoiceDate(text) {
@@ -5154,22 +5186,45 @@ function extractInvoiceDate(text) {
   }
   return null;
 }
+
+function dvNormVal(v){ return String(v==null?'':v).trim().toLowerCase(); }
+function dvInboundExists(reagentId, lot, expiry, date){
+  const lotKey = dvNormVal(lot);
+  const expKey = dvNormVal(expiry);
+  const dateKey = dvNormVal(date);
+  return S.records.some(rec =>
+    rec && rec.type==='입고' && rec.reagentId===reagentId &&
+    dvNormVal(rec.lot)===lotKey &&
+    dvNormVal(rec.expiry)===expKey &&
+    dvNormVal(rec.registeredAt)===dateKey
+  );
+}
+
 function dvSaveParsed() {
   const matched = _dvParsedRows.filter(r => r.reagent);
   if (!matched.length) { toast('매핑된 시약 없음', 'w'); return; }
   const date = document.getElementById('dv-date2').value || tod();
   const person = document.getElementById('dv-person2').value.trim();
   _saveUndo();
+  let registered = 0;
+  let skipped = 0;
   matched.forEach(r => {
+    if(dvInboundExists(r.reagent.id, r.lot, r.exp, date)){
+      skipped++;
+      return;
+    }
     S.records.unshift({
       id: uid(), reagentId: r.reagent.id, device: r.reagent.device,
       type: '입고', lot: r.lot, qty: r.qty, expiry: r.exp,
       person, note: '납품서', registeredAt: date,
       parallelDone: false, needsParallel: false
     });
+    registered++;
   });
   save(); renderAll();
-  toast(`${matched.length}개 입고 등록 완료`, 's');
+  if(registered && skipped) toast(`${registered}개 등록, ${skipped}개 중복 건너뜀`, 's');
+  else if(registered) toast(`${registered}개 입고 등록 완료`, 's');
+  else toast(`기존 입고와 중복되어 ${skipped}개 건너뜀`, 'w');
   closeDelivery();
 }
 
@@ -5333,11 +5388,16 @@ function dvSaveAll(){
   if(!valid.length){ toast('시약을 1개 이상 선택하세요','w'); return; }
 
   let registered = 0;
+  let skipped = 0;
   valid.forEach(row=>{
     let reagent = S.reagents.find(r=>r.id===row.reagentId);
     if(!reagent){
       reagent = {id:uid(), name:row.reagentName.trim(), device:row.device, storage:'냉장', unit:''};
       S.reagents.push(reagent);
+    }
+    if(dvInboundExists(reagent.id, row.lot||'', row.expiry||'', date)){
+      skipped++;
+      return;
     }
     S.records.unshift({
       id:uid(), reagentId:reagent.id, device:reagent.device,
@@ -5349,7 +5409,9 @@ function dvSaveAll(){
   });
 
   save(); renderAll();
-  toast(`${registered}개 입고 등록 완료`,'s');
+  if(registered && skipped) toast(`${registered}개 등록, ${skipped}개 중복 건너뜀`,'s');
+  else if(registered) toast(`${registered}개 입고 등록 완료`,'s');
+  else toast(`기존 입고와 중복되어 ${skipped}개 건너뜀`,'w');
   closeDelivery();
 }
 
@@ -5402,6 +5464,40 @@ function enterPart(partId) {
   }
 }
 
+function customDeviceIconSvg(type){
+  if(type === 'shield') return '<span class="nav-mini"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.8-2.7 8.3-7 10-4.3-1.7-7-5.2-7-10V6l7-3z"></path><path d="M9.5 12.5l1.8 1.8 3.8-4"></path></svg></span>';
+  if(type === 'dna') return '<span class="nav-mini"><svg viewBox="0 0 24 24"><path d="M8 4c4 0 4 4 8 4"></path><path d="M8 20c4 0 4-4 8-4"></path><path d="M8 4c0 4 4 4 4 8s-4 4-4 8"></path><path d="M16 4c0 4-4 4-4 8s4 4 4 8"></path><path d="M9 8h6"></path><path d="M9 16h6"></path></svg></span>';
+  if(type === 'monitor') return '<span class="nav-mini"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="10" rx="2"></rect><path d="M8 20h8"></path><path d="M12 16v4"></path><path d="M7 10h10"></path></svg></span>';
+  if(type === 'drop') return '<span class="nav-mini"><svg viewBox="0 0 24 24"><path d="M12 3c3 4 6 7.1 6 10.3A6 6 0 1 1 6 13.3C6 10.1 9 7 12 3z"></path></svg></span>';
+  if(type === 'blood') return '<span class="nav-mini"><svg viewBox="0 0 24 24"><circle cx="9" cy="12" r="3.2"></circle><circle cx="15" cy="9" r="2.6"></circle><circle cx="15.5" cy="15" r="2.8"></circle></svg></span>';
+  return '<span class="nav-mini"><svg viewBox="0 0 24 24"><path d="M7 4h10"></path><path d="M9 4v5l-4 7a3 3 0 0 0 2.6 4.5h8.8A3 3 0 0 0 19 16l-4-7V4"></path><path d="M8 14h8"></path></svg></span>';
+}
+
+function getCustomDeviceNavSpec(device, idx){
+  const name = String((device && device.name) || '').trim();
+  const upper = name.toUpperCase();
+  const seq = [
+    {icon:'shield', color:'#ef4444'},
+    {icon:'dna', color:'#f59e0b'},
+    {icon:'monitor', color:'#6366f1'},
+    {icon:'drop', color:'#14b8a6'},
+    {icon:'blood', color:'#2563eb'},
+    {icon:'flask', color:'#7c3aed'}
+  ];
+  if(upper === 'E402') return {icon:'shield', color:'#ef4444'};
+  if(name.includes('일반정성')) return {icon:'dna', color:'#f59e0b'};
+  if(upper.includes('F2400') || upper.includes('STANDARD F') || upper.includes('STANDARDF')) return {icon:'monitor', color:'#6366f1'};
+  if(upper.includes('NX10N')) return {icon:'drop', color:'#14b8a6'};
+  if(upper.includes('B221')) return {icon:'blood', color:'#2563eb'};
+  if(upper.includes('E801')) return {icon:'flask', color:'#c26a1b'};
+  if(upper.includes('C503')) return {icon:'flask', color:'#7c3aed'};
+  if(upper.includes('혈액') || upper.includes('BLOOD')) return {icon:'blood', color:'#2563eb'};
+  if(upper.includes('DNA') || upper.includes('PCR') || upper.includes('GENE')) return {icon:'dna', color:'#059669'};
+  if(upper.includes('면역') || upper.includes('IMMUNO')) return {icon:'shield', color:'#ef4444'};
+  if(upper.includes('소변') || upper.includes('URINE')) return {icon:'drop', color:'#f59e0b'};
+  return seq[idx % seq.length];
+}
+
 function buildCustomNav(partId, devices) {
   let nav = document.getElementById('nav-custom');
   if(!nav) {
@@ -5413,12 +5509,12 @@ function buildCustomNav(partId, devices) {
   nav.style.display = '';
   nav.innerHTML = '';
 
-  const makeIcon = (type, accent) => {
+  const makeIcon = (type, device, idx) => {
     if(type === 'status') return '<span class="nav-mini"><svg viewBox="0 0 24 24"><path d="M4 18h16"></path><path d="M7 14l3-3 3 2 4-5"></path><circle cx="7" cy="14" r="1"></circle><circle cx="10" cy="11" r="1"></circle><circle cx="13" cy="13" r="1"></circle><circle cx="17" cy="8" r="1"></circle></svg></span>';
     if(type === 'more') return '<span class="nav-mini"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle><circle cx="5" cy="12" r="1.8"></circle></svg></span>';
     if(type === 'add') return '<span class="nav-mini"><svg viewBox="0 0 24 24"><path d="M12 5v14"></path><path d="M5 12h14"></path><circle cx="12" cy="12" r="9"></circle></svg></span>';
-    const col = accent || 'var(--accent)';
-    return `<span class="nav-mini"><svg viewBox="0 0 24 24" style="color:${col}"><path d="M7 4h10"></path><path d="M9 4v5l-4 7a3 3 0 0 0 2.6 4.5h8.8A3 3 0 0 0 19 16l-4-7V4"></path><path d="M8 14h8"></path></svg></span>`;
+    const spec = getCustomDeviceNavSpec(device, idx);
+    return customDeviceIconSvg(spec.icon);
   };
 
   const statusBtn = document.createElement('button');
@@ -5429,10 +5525,12 @@ function buildCustomNav(partId, devices) {
 
   devices.forEach((d, i) => {
     const btn = document.createElement('button');
-    btn.className = 'nav-item' + (i===0?' active':'');
+    const spec = getCustomDeviceNavSpec(d, i);
+    btn.className = 'nav-item device-tab' + (i===0?' active':'');
+    btn.style.setProperty('--nav-active-color', spec.color || d.color || '#126bff');
     btn.dataset.dev = d.id;
     const shortName = d.name.length>6 ? d.name.slice(0,6)+'…' : d.name;
-    btn.innerHTML = `<span class="nav-dev">${makeIcon('device', d.color)}</span><span class="nav-lbl">${shortName}</span>`;
+    btn.innerHTML = `<span class="nav-dev">${makeIcon('device', d, i)}</span><span class="nav-lbl">${shortName}</span>`;
     btn.onclick = () => goCustomDevice(d.id, btn);
     let timer = null;
     const startLong = () => { timer = setTimeout(()=>confirmDeleteDevice(d.id, d.name), 700); };
@@ -5486,11 +5584,14 @@ function goCustomDevice(deviceId, btn) {
   if(!device) return;
   const dvKey = 'custom-'+deviceId;
   let pg = document.getElementById('pg-'+dvKey);
+  const samePartDevices = (S.customDevices||[]).filter(d => d.partId === device.partId);
+  const deviceIdx = Math.max(0, samePartDevices.findIndex(d => d.id === deviceId));
   if(!pg) {
     pg = document.createElement('div');
     pg.id = 'pg-'+dvKey;
     pg.className = 'page';
-    const c = device.color||'var(--accent)';
+    const navSpec = getCustomDeviceNavSpec(device, deviceIdx);
+    const c = (navSpec && navSpec.color) || device.color || 'var(--accent)';
     pg.style.setProperty('--pill-act-bg', c);
     pg.innerHTML = `
       <div class="device-header" style="border-top:3px solid ${c};">
@@ -5502,7 +5603,7 @@ function goCustomDevice(deviceId, btn) {
           <div style="margin-left:auto;display:flex;gap:6px;">
             <button class="btn sm" onclick="undoLast()">↩</button>
             <button class="btn sm" onclick="printLedger('${dvKey}-주시약')">PDF</button>
-            <button class="btn sm" onclick="manualSave()" style="background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700;">저장</button>
+            <button class="btn sm" onclick="manualSave()" style="background:${c};color:#fff;border-color:${c};font-weight:700;">저장</button>
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
