@@ -4,7 +4,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta name="app-version" content="20260430-login-firebase-fix">
+  <meta name="app-version" content="20260430-login-firebase-hardfix">
   <script>
     // Service Worker 등록 - network-first 전략
     if('serviceWorker' in navigator){
@@ -29,7 +29,7 @@
     }
     // 버전 체크
     (function(){
-      var VER = '20260430-login-firebase-fix';
+      var VER = '20260430-login-firebase-hardfix';
       var stored = localStorage.getItem('_appVer');
       if(stored && stored !== VER){
         localStorage.setItem('_appVer', VER);
@@ -40,7 +40,7 @@
     })();
   </script>
 <meta charset="UTF-8">
-  <link rel="manifest" href="manifest.json?v=20260430-login-firebase-fix">
+  <link rel="manifest" href="manifest.json?v=20260430-login-firebase-hardfix">
   <meta name="theme-color" content="#1677ff">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -48,7 +48,7 @@
 
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="시약장부-운영">
-  <link rel="apple-touch-icon" href="icon-192.png?v=20260430-login-firebase-fix">
+  <link rel="apple-touch-icon" href="icon-192.png?v=20260430-login-firebase-hardfix">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>안성성모병원 ReagentAI</title>
 <!-- PWA_RESTORE_FINAL_20260427: 최종 계정수정본 + PWA 설치 설정 유지 -->
@@ -1308,13 +1308,8 @@ function openRegularReagentPicker(idx){
         return;
       }
       const data = snap.data();
-      if((Array.isArray(data.loginUsers) || data.loginDeletedUsers) && typeof window.__syncLoginUsersFromFirebase === 'function'){
-        window.__syncLoginUsersFromFirebase(
-          data.loginUsers || [],
-          data._loginUsersSavedAt || data._savedAt || 0,
-          data.loginDeletedUsers || {},
-          data._loginDeletedUsersSavedAt || 0
-        );
+      if(Array.isArray(data.loginUsers) && typeof window.__syncLoginUsersFromFirebase === 'function'){
+        window.__syncLoginUsersFromFirebase(data.loginUsers, data._loginUsersSavedAt || data._savedAt || 0, data.loginDeletedUsers || []);
       }
       if(!window._fsLastSave || data._savedAt > window._fsLastSave) {
         window._fsLastSave = data._savedAt;
@@ -1500,19 +1495,17 @@ ReagentAI</div>
       <div id="login-pane-signup" class="login-pane">
         <div class="login-pane-title">회원가입 신청</div>
         <div class="login-pane-desc">아이디 중복 확인 후 신청하면 관리자 승인 뒤 로그인할 수 있습니다.</div>
-        <div class="login-grid-2">
-          <div class="login-field"><input id="signup-name-input" type="text" placeholder="이름"></div>
-          <div class="login-field">
-            <select id="signup-part-input">
-              <option value="">파트 선택</option>
-              <option value="화학">화학</option>
-              <option value="면역">면역</option>
-              <option value="혈액">혈액</option>
-              <option value="미생물">미생물</option>
-              <option value="분자">분자</option>
-              <option value="기타">기타</option>
-            </select>
-          </div>
+        <div class="login-field"><input id="signup-name-input" type="text" placeholder="이름" autocomplete="name"></div>
+        <div class="login-field">
+          <select id="signup-part-input">
+            <option value="">파트 선택</option>
+            <option value="화학">화학</option>
+            <option value="면역">면역</option>
+            <option value="혈액">혈액</option>
+            <option value="미생물">미생물</option>
+            <option value="분자">분자</option>
+            <option value="기타">기타</option>
+          </select>
         </div>
         <div class="login-field">
           <div class="login-inline">
@@ -7399,10 +7392,9 @@ function openRegularReagentPicker(idx){
 (function(){
   const LOGIN_USERS_KEY = 'reagentLoginUsers_v2';
   const LOGIN_USERS_TS_KEY = 'reagentLoginUsers_v2_savedAt';
-  const LOGIN_DELETED_KEY = 'reagentLoginDeletedUsers_v2';
-  const LOGIN_DELETED_TS_KEY = 'reagentLoginDeletedUsers_v2_savedAt';
   const LOGIN_AUTO_KEY = 'reagentLoginAutoUser_v2';
   const LOGIN_SESSION_KEY = 'reagentLoginSessionUser_v2';
+  const LOGIN_DELETED_KEY = 'reagentLoginDeletedUsers_v2';
   const ADMIN_PIN = '5030';
   let signupCheckedId = '';
   let _loginUsersSyncing = false;
@@ -7413,56 +7405,12 @@ function openRegularReagentPicker(idx){
   }
   function el(id){ return document.getElementById(id); }
   function esc(v){ return String(v==null?'':v).replace(/[&<>"']/g, function(s){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]); }); }
-  function normalizeId(v){ return String(v||'').trim().toLowerCase(); }
   function _loginUserKey(u){ return normalizeId(u && u.id); }
-  function _nowIso(){ return new Date().toISOString(); }
-  function _getRef(){ return (window._firebaseReady && window._REF) ? window._REF : null; }
-
-  function readDeletedUsers(){
-    try{
-      const obj = JSON.parse(localStorage.getItem(LOGIN_DELETED_KEY)||'{}');
-      return obj && typeof obj === 'object' && !Array.isArray(obj) ? obj : {};
-    }catch(e){ return {}; }
-  }
-  function _writeDeletedLocal(obj, ts){
-    localStorage.setItem(LOGIN_DELETED_KEY, JSON.stringify(obj && typeof obj === 'object' ? obj : {}));
-    localStorage.setItem(LOGIN_DELETED_TS_KEY, String(ts || Date.now()));
-  }
-  function markUserDeleted(id){
-    id = normalizeId(id);
-    if(!id || id === 'admin') return readDeletedUsers();
-    const del = readDeletedUsers();
-    del[id] = Date.now();
-    _writeDeletedLocal(del, Date.now());
-    return del;
-  }
-  function unmarkUserDeleted(id){
-    id = normalizeId(id);
-    if(!id) return;
-    const del = readDeletedUsers();
-    if(del[id]){
-      delete del[id];
-      const ts = Date.now();
-      _writeDeletedLocal(del, ts);
-      const ref = _getRef();
-      if(ref) ref.set({ loginDeletedUsers:del, _loginDeletedUsersSavedAt:ts }, { merge:true }).catch(function(e){ console.error('삭제목록 저장 실패:', e); });
-    }
-  }
-  function _filterDeletedUsers(users, deleted){
-    const del = deleted || readDeletedUsers();
-    return (Array.isArray(users)?users:[]).filter(function(u){
-      const id = _loginUserKey(u);
-      return id && !del[id];
-    });
-  }
-  function _mergeDeleted(a,b){ return Object.assign({}, (a&&typeof a==='object'?a:{}), (b&&typeof b==='object'?b:{})); }
-  function _mergeUsers(a,b, deleted){
-    const del = deleted || readDeletedUsers();
+  function _mergeUsers(a,b){
     const map = new Map();
     [].concat(Array.isArray(a)?a:[], Array.isArray(b)?b:[]).forEach(function(u){
       if(!u || !_loginUserKey(u)) return;
       const k = _loginUserKey(u);
-      if(del[k]) return;
       const prev = map.get(k);
       if(!prev){ map.set(k, Object.assign({}, u, {id:k})); return; }
       const prevT = Date.parse(prev.updatedAt || prev.createdAt || 0) || 0;
@@ -7480,101 +7428,154 @@ function openRegularReagentPicker(idx){
       return _filterDeletedUsers(Array.isArray(arr) ? arr : []);
     }catch(e){ return []; }
   }
+  function _readDeletedUserIds(){
+    try{
+      const arr = JSON.parse(localStorage.getItem(LOGIN_DELETED_KEY)||'[]');
+      return Array.isArray(arr) ? arr.map(normalizeId).filter(Boolean) : [];
+    }catch(e){ return []; }
+  }
+  function _writeDeletedUserIds(ids){
+    const clean = Array.from(new Set((Array.isArray(ids)?ids:[]).map(normalizeId).filter(Boolean)));
+    localStorage.setItem(LOGIN_DELETED_KEY, JSON.stringify(clean));
+    return clean;
+  }
+  function _filterDeletedUsers(list){
+    const deleted = new Set(_readDeletedUserIds());
+    return (Array.isArray(list)?list:[]).filter(function(u){ return u && !deleted.has(_loginUserKey(u)); });
+  }
   function _writeUsersLocal(arr, ts){
-    const clean = _filterDeletedUsers(Array.isArray(arr)?arr:[]);
-    localStorage.setItem(LOGIN_USERS_KEY, JSON.stringify(clean));
+    localStorage.setItem(LOGIN_USERS_KEY, JSON.stringify(_filterDeletedUsers(Array.isArray(arr)?arr:[])));
     localStorage.setItem(LOGIN_USERS_TS_KEY, String(ts || Date.now()));
   }
-  function writeUsers(arr, opts){
-    opts = opts || {};
+  function writeUsers(arr){
     const list = _filterDeletedUsers(Array.isArray(arr) ? arr : []);
-    const deleted = readDeletedUsers();
     const ts = Date.now();
     _writeUsersLocal(list, ts);
-    const ref = _getRef();
-    if(ref){
-      ref.set({ loginUsers:list, loginDeletedUsers:deleted, _loginUsersSavedAt:ts, _loginDeletedUsersSavedAt:Number(localStorage.getItem(LOGIN_DELETED_TS_KEY) || ts) }, { merge:true }).catch(function(e){
+    if(window._firebaseReady && window._REF){
+      window._REF.set({ loginUsers:list, _loginUsersSavedAt:ts, loginDeletedUsers:_readDeletedUserIds(), _loginDeletedUsersSavedAt:ts }, { merge:true }).catch(function(e){
         console.error('계정 Firebase 저장 실패:', e);
-        if(!opts.silent) safeToast('계정 저장 실패', 'e');
+        safeToast('계정 저장 실패', 'e');
       });
-    }else if(!opts.silent){
-      console.warn('Firebase ref 없음: 계정은 현재 기기에만 저장됨');
+    }else{
+      console.warn('Firebase REF 없음: 계정이 이 기기에만 저장됨');
     }
   }
-
-  window.__syncLoginUsersFromFirebase = function(remoteUsers, remoteTs, remoteDeleted, remoteDeletedTs){
+  function _mergeDeletedIds(remoteDeleted){
+    const merged = Array.from(new Set([].concat(_readDeletedUserIds(), Array.isArray(remoteDeleted)?remoteDeleted:[]).map(normalizeId).filter(Boolean)));
+    _writeDeletedUserIds(merged);
+    return merged;
+  }
+  async function refreshUsersFromFirebase(writeBack){
+    if(!(window._firebaseReady && window._REF)) return readUsers();
+    try{
+      const snap = await window._REF.get();
+      const data = snap && snap.exists ? (snap.data() || {}) : {};
+      _mergeDeletedIds(data.loginDeletedUsers || []);
+      const remoteUsers = Array.isArray(data.loginUsers) ? data.loginUsers : [];
+      const merged = _filterDeletedUsers(_mergeUsers(readUsers(), remoteUsers));
+      const ts = Math.max(Number(localStorage.getItem(LOGIN_USERS_TS_KEY)||0), Number(data._loginUsersSavedAt||0), Date.now());
+      _writeUsersLocal(merged, ts);
+      if(writeBack){
+        await window._REF.set({ loginUsers:merged, _loginUsersSavedAt:Date.now(), loginDeletedUsers:_readDeletedUserIds(), _loginDeletedUsersSavedAt:Date.now() }, { merge:true });
+      }
+      return merged;
+    }catch(e){
+      console.error('계정 Firebase 불러오기 실패:', e);
+      safeToast('가입신청 목록 불러오기 실패', 'e');
+      return readUsers();
+    }
+  }
+  window.__syncLoginUsersFromFirebase = function(remoteUsers, remoteTs, remoteDeletedUsers){
     if(_loginUsersSyncing) return;
     _loginUsersSyncing = true;
     try{
-      const localDel = readDeletedUsers();
-      const mergedDel = _mergeDeleted(localDel, remoteDeleted || {});
-      const delTs = Math.max(Number(localStorage.getItem(LOGIN_DELETED_TS_KEY)||0), Number(remoteDeletedTs||0), Date.now());
-      _writeDeletedLocal(mergedDel, delTs);
+      _mergeDeletedIds(remoteDeletedUsers || []);
       const localUsers = readUsers();
-      const mergedUsers = _mergeUsers(localUsers, Array.isArray(remoteUsers)?remoteUsers:[], mergedDel);
-      const ts = Math.max(Number(localStorage.getItem(LOGIN_USERS_TS_KEY)||0), Number(remoteTs||0), Date.now());
-      _writeUsersLocal(mergedUsers, ts);
-      const ref = _getRef();
-      if(ref){
-        ref.set({ loginUsers:mergedUsers, loginDeletedUsers:mergedDel, _loginUsersSavedAt:ts, _loginDeletedUsersSavedAt:delTs }, { merge:true }).catch(function(e){ console.error('계정 재동기화 실패:', e); });
+      const merged = _filterDeletedUsers(_mergeUsers(localUsers, Array.isArray(remoteUsers)?remoteUsers:[]));
+      const localTs = Number(localStorage.getItem(LOGIN_USERS_TS_KEY) || 0);
+      const rts = Number(remoteTs || 0);
+      _writeUsersLocal(merged, Math.max(localTs, rts, Date.now()));
+      if(typeof window.renderLoginAdminRoom === 'function') window.renderLoginAdminRoom();
+      if(localUsers.length && rts < localTs && window._firebaseReady && window._REF){
+        window._REF.set({ loginUsers:merged, _loginUsersSavedAt:Date.now(), loginDeletedUsers:_readDeletedUserIds(), _loginDeletedUsersSavedAt:Date.now() }, { merge:true }).catch(function(e){
+          console.error('계정 Firebase 재동기화 실패:', e);
+        });
       }
-    }finally{ _loginUsersSyncing = false; }
-    if(typeof window.renderLoginAdminRoom === 'function') window.renderLoginAdminRoom();
+    }finally{
+      _loginUsersSyncing = false;
+    }
   };
-
-  function refreshUsersFromFirebase(callback){
-    const ref = _getRef();
-    if(!ref){ if(callback) callback(false); return; }
-    ref.get().then(function(snap){
-      if(snap && snap.exists){
-        const data = snap.data() || {};
-        window.__syncLoginUsersFromFirebase(data.loginUsers || [], data._loginUsersSavedAt || data._savedAt || 0, data.loginDeletedUsers || {}, data._loginDeletedUsersSavedAt || 0);
-      }
-      if(callback) callback(true);
-    }).catch(function(e){
-      console.error('가입신청 목록 불러오기 실패:', e);
-      safeToast('가입신청 목록 불러오기 실패', 'e');
-      if(callback) callback(false);
-    });
-  }
-
   function getCurrentUser(){
-    try{ const auto = JSON.parse(localStorage.getItem(LOGIN_AUTO_KEY)||'null'); if(auto && auto.id) return auto; }catch(e){}
-    try{ const sess = JSON.parse(sessionStorage.getItem(LOGIN_SESSION_KEY)||'null'); if(sess && sess.id) return sess; }catch(e){}
+    try{
+      const auto = JSON.parse(localStorage.getItem(LOGIN_AUTO_KEY)||'null');
+      if(auto && auto.id) return auto;
+    }catch(e){}
+    try{
+      const sess = JSON.parse(sessionStorage.getItem(LOGIN_SESSION_KEY)||'null');
+      if(sess && sess.id) return sess;
+    }catch(e){}
     return null;
   }
   function setCurrentUser(user, autoLogin){
     if(!user) return;
     sessionStorage.setItem(LOGIN_SESSION_KEY, JSON.stringify(user));
-    if(autoLogin) localStorage.setItem(LOGIN_AUTO_KEY, JSON.stringify(user)); else localStorage.removeItem(LOGIN_AUTO_KEY);
+    if(autoLogin) localStorage.setItem(LOGIN_AUTO_KEY, JSON.stringify(user));
+    else localStorage.removeItem(LOGIN_AUTO_KEY);
     updateLoginUI(user);
   }
-  function clearCurrentUser(){ sessionStorage.removeItem(LOGIN_SESSION_KEY); localStorage.removeItem(LOGIN_AUTO_KEY); updateLoginUI(null); }
-  function updateHelp(targetId, msg, cls){ const node = el(targetId); if(!node) return; node.className = 'login-help ' + (cls || 'info'); node.textContent = msg || ''; }
+  function clearCurrentUser(){
+    sessionStorage.removeItem(LOGIN_SESSION_KEY);
+    localStorage.removeItem(LOGIN_AUTO_KEY);
+    updateLoginUI(null);
+  }
+  function updateHelp(targetId, msg, cls){
+    const node = el(targetId); if(!node) return;
+    node.className = 'login-help ' + (cls || 'info');
+    node.textContent = msg || '';
+  }
   function updateLoginUI(user){
-    const gate = el('login-gate'); const chip = el('login-user-chip'); const chipTxt = el('login-user-chip-text');
-    if(user && gate) gate.hidden = true; if(!user && gate) gate.hidden = false;
+    const gate = el('login-gate');
+    const chip = el('login-user-chip');
+    const chipTxt = el('login-user-chip-text');
+    if(user && gate) gate.hidden = true;
+    if(!user && gate) gate.hidden = false;
     if(chip){
-      if(user){ chip.classList.add('on'); if(chipTxt) chipTxt.textContent = (user.name || user.id || '직원') + (user.role==='admin' ? ' · 관리자' : user.part ? ' · '+user.part : ''); }
-      else{ chip.classList.remove('on'); if(chipTxt) chipTxt.textContent = ''; }
+      if(user){
+        chip.classList.add('on');
+        if(chipTxt) chipTxt.textContent = (user.name || user.id || '직원') + (user.role==='admin' ? ' · 관리자' : user.part ? ' · '+user.part : '');
+      }else{
+        chip.classList.remove('on');
+        if(chipTxt) chipTxt.textContent = '';
+      }
     }
   }
+  function normalizeId(v){ return String(v||'').trim().toLowerCase(); }
 
   window.loginGateSetTab = function(tab){
     const isSignup = tab === 'signup';
-    const tabLogin = el('login-tab-login'), tabSignup = el('login-tab-signup'), paneLogin = el('login-pane-login'), paneSignup = el('login-pane-signup');
-    if(tabLogin) tabLogin.classList.toggle('active', !isSignup); if(tabSignup) tabSignup.classList.toggle('active', isSignup);
-    if(paneLogin) paneLogin.classList.toggle('active', !isSignup); if(paneSignup) paneSignup.classList.toggle('active', isSignup);
+    const tabLogin = el('login-tab-login');
+    const tabSignup = el('login-tab-signup');
+    const paneLogin = el('login-pane-login');
+    const paneSignup = el('login-pane-signup');
+    if(tabLogin) tabLogin.classList.toggle('active', !isSignup);
+    if(tabSignup) tabSignup.classList.toggle('active', isSignup);
+    if(paneLogin) paneLogin.classList.toggle('active', !isSignup);
+    if(paneSignup) paneSignup.classList.toggle('active', isSignup);
   };
 
   window.loginGateCheckDuplicate = function(){
     const idVal = normalizeId(el('signup-id-input') && el('signup-id-input').value);
     if(!idVal){ updateHelp('login-help-signup', '아이디를 입력한 뒤 중복 확인을 해주세요.', 'err'); return; }
-    refreshUsersFromFirebase(function(){
-      const exists = readUsers().some(function(u){ return normalizeId(u.id) === idVal; });
-      if(exists){ signupCheckedId = ''; updateHelp('login-help-signup', '이미 사용 중인 아이디입니다. 다른 아이디를 사용해주세요.', 'err'); safeToast('이미 사용 중인 아이디입니다','e'); return; }
-      signupCheckedId = idVal; updateHelp('login-help-signup', '사용 가능한 아이디입니다. 회원가입 신청을 진행하세요.', 'ok'); safeToast('사용 가능한 아이디입니다','s');
-    });
+    const exists = readUsers().some(function(u){ return normalizeId(u.id) === idVal; });
+    if(exists){
+      signupCheckedId = '';
+      updateHelp('login-help-signup', '이미 사용 중인 아이디입니다. 다른 아이디를 사용해주세요.', 'err');
+      safeToast('이미 사용 중인 아이디입니다','e');
+      return;
+    }
+    signupCheckedId = idVal;
+    updateHelp('login-help-signup', '사용 가능한 아이디입니다. 회원가입 신청을 진행하세요.', 'ok');
+    safeToast('사용 가능한 아이디입니다','s');
   };
 
   window.loginGateSignup = function(){
@@ -7590,13 +7591,27 @@ function openRegularReagentPicker(idx){
     if(signupCheckedId !== id){ updateHelp('login-help-signup', '아이디 중복 확인을 먼저 해주세요.', 'err'); return; }
     if(!pw || pw.length < 4){ updateHelp('login-help-signup', '비밀번호는 4자 이상 입력해주세요.', 'err'); return; }
     if(pw !== pw2){ updateHelp('login-help-signup', '비밀번호 확인이 일치하지 않습니다.', 'err'); return; }
-    if(users.some(function(u){ return normalizeId(u.id) === id; })){ updateHelp('login-help-signup', '이미 등록된 아이디입니다.', 'err'); signupCheckedId=''; return; }
-    unmarkUserDeleted(id);
-    users.unshift({ id:id, pw:pw, name:name, part:part, approved:false, role:'user', createdAt:_nowIso(), updatedAt:_nowIso() });
+    if(users.some(function(u){ return normalizeId(u.id) === id; })){
+      updateHelp('login-help-signup', '이미 등록된 아이디입니다.', 'err');
+      signupCheckedId='';
+      return;
+    }
+    users.unshift({
+      id:id,
+      pw:pw,
+      name:name,
+      part:part,
+      approved:false,
+      role:'user',
+      createdAt:new Date().toISOString(),
+      updatedAt:new Date().toISOString()
+    });
     writeUsers(users);
     ['signup-name-input','signup-id-input','signup-pw-input','signup-pw2-input'].forEach(function(id){ var n=el(id); if(n) n.value=''; });
-    if(el('signup-part-input')) el('signup-part-input').value=''; signupCheckedId='';
-    updateHelp('login-help-signup', '회원가입 신청이 완료되었습니다. 관리자 승인 후 로그인 가능합니다.', 'ok'); safeToast('회원가입 신청 완료','s');
+    if(el('signup-part-input')) el('signup-part-input').value='';
+    signupCheckedId='';
+    updateHelp('login-help-signup', '회원가입 신청이 완료되었습니다. 관리자 승인 후 로그인 가능합니다.', 'ok');
+    safeToast('회원가입 신청 완료','s');
     if(getCurrentUser() && getCurrentUser().role==='admin') renderAdminRoom();
     setTimeout(function(){ window.loginGateSetTab('login'); }, 250);
   };
@@ -7605,27 +7620,40 @@ function openRegularReagentPicker(idx){
     const id = normalizeId(el('login-id-input') && el('login-id-input').value);
     const pw = String(el('login-pw-input') && el('login-pw-input').value || '').trim();
     const autoLogin = !!(el('login-auto-input') && el('login-auto-input').checked);
-    refreshUsersFromFirebase(function(){
-      const users = readUsers();
-      if(!id || !pw){ updateHelp('login-help-login', '아이디와 비밀번호를 입력해주세요.', 'err'); return; }
-      const user = users.find(function(u){ return normalizeId(u.id)===id; });
-      if(!user){ updateHelp('login-help-login', '등록되지 않은 아이디입니다.', 'err'); safeToast('등록되지 않은 아이디입니다','e'); return; }
-      if(String(user.pw) !== pw){ updateHelp('login-help-login', '비밀번호가 맞지 않습니다.', 'err'); safeToast('비밀번호가 맞지 않습니다','e'); return; }
-      if(!user.approved){ updateHelp('login-help-login', '관리자 승인 대기중입니다.', 'err'); safeToast('관리자 승인 대기중입니다','w'); return; }
-      setCurrentUser({id:user.id,name:user.name,part:user.part,role:user.role||'user'}, autoLogin); updateHelp('login-help-login', '', 'info'); safeToast((user.name||user.id)+'님 로그인되었습니다','s');
-    });
+    const users = readUsers();
+    if(!id || !pw){ updateHelp('login-help-login', '아이디와 비밀번호를 입력해주세요.', 'err'); return; }
+    const user = users.find(function(u){ return normalizeId(u.id)===id; });
+    if(!user){ updateHelp('login-help-login', '등록되지 않은 아이디입니다.', 'err'); safeToast('등록되지 않은 아이디입니다','e'); return; }
+    if(String(user.pw) !== pw){ updateHelp('login-help-login', '비밀번호가 맞지 않습니다.', 'err'); safeToast('비밀번호가 맞지 않습니다','e'); return; }
+    if(!user.approved){ updateHelp('login-help-login', '관리자 승인 대기중입니다.', 'err'); safeToast('관리자 승인 대기중입니다','w'); return; }
+    setCurrentUser({id:user.id,name:user.name,part:user.part,role:user.role||'user'}, autoLogin);
+    updateHelp('login-help-login', '', 'info');
+    safeToast((user.name||user.id)+'님 로그인되었습니다','s');
   };
 
   function requireAdminPin(){
-    const current = getCurrentUser(); if(current && current.role==='admin') return true;
-    const pin = prompt('관리자 PIN을 입력하세요'); if(pin === null) return false;
+    const current = getCurrentUser();
+    if(current && current.role==='admin') return true;
+    const pin = prompt('관리자 PIN을 입력하세요');
+    if(pin === null) return false;
     if(String(pin).trim() !== ADMIN_PIN){ safeToast('관리자 PIN이 맞지 않습니다','e'); return false; }
     if(typeof window.setNoticeAdmin === 'function') window.setNoticeAdmin(true);
-    setCurrentUser({id:'admin',name:'관리자',part:'관리자',role:'admin'}, false); safeToast('관리자 인증 완료','s'); return true;
+    setCurrentUser({id:'admin',name:'관리자',part:'관리자',role:'admin'}, false);
+    safeToast('관리자 인증 완료','s');
+    return true;
   }
 
-  window.loginGateAdmin = function(){ if(!requireAdminPin()) return; openLoginAdminRoom(); };
-  window.loginGateLogout = function(fromAdmin){ clearCurrentUser(); if(typeof window.setNoticeAdmin === 'function') window.setNoticeAdmin(false); if(fromAdmin) closeLoginAdminRoom(); safeToast('로그아웃되었습니다','s'); };
+  window.loginGateAdmin = function(){
+    if(!requireAdminPin()) return;
+    openLoginAdminRoom();
+  };
+
+  window.loginGateLogout = function(fromAdmin){
+    clearCurrentUser();
+    if(typeof window.setNoticeAdmin === 'function') window.setNoticeAdmin(false);
+    if(fromAdmin) closeLoginAdminRoom();
+    safeToast('로그아웃되었습니다','s');
+  };
 
   function renderAdminList(targetId, items, approved){
     const box = el(targetId); if(!box) return;
@@ -7633,33 +7661,72 @@ function openRegularReagentPicker(idx){
     box.innerHTML = items.map(function(u){
       const when = u.createdAt ? new Date(u.createdAt) : null;
       const dateText = when && !isNaN(when) ? when.getFullYear()+'.'+String(when.getMonth()+1).padStart(2,'0')+'.'+String(when.getDate()).padStart(2,'0')+' '+String(when.getHours()).padStart(2,'0')+':'+String(when.getMinutes()).padStart(2,'0') : '-';
-      const actions = approved ? '<button class="admin-action-btn delete" type="button" onclick="deleteAdminUser(\''+esc(u.id)+'\')">삭제</button>' : '<button class="admin-action-btn approve" type="button" onclick="approveAdminUser(\''+esc(u.id)+'\')">승인</button><button class="admin-action-btn delete" type="button" onclick="deleteAdminUser(\''+esc(u.id)+'\')">삭제</button>';
+      const actions = approved
+        ? '<button class="admin-action-btn delete" type="button" onclick="deleteAdminUser(\''+esc(u.id)+'\')">삭제</button>'
+        : '<button class="admin-action-btn approve" type="button" onclick="approveAdminUser(\''+esc(u.id)+'\')">승인</button><button class="admin-action-btn delete" type="button" onclick="deleteAdminUser(\''+esc(u.id)+'\')">삭제</button>';
       return '<div class="admin-user-card"><div class="admin-user-row"><div class="admin-user-meta"><div class="admin-user-name">'+esc(u.name||u.id)+'</div><div class="admin-user-sub">ID: '+esc(u.id)+' · 파트: '+esc(u.part||'-')+'<br>신청일: '+esc(dateText)+'</div></div><div class="admin-user-actions">'+actions+'</div></div></div>';
     }).join('');
   }
-  function renderAdminRoom(){ const users = readUsers(); renderAdminList('admin-pending-list', users.filter(function(u){ return !u.approved; }), false); renderAdminList('admin-approved-list', users.filter(function(u){ return !!u.approved; }), true); }
+
+  function renderAdminRoom(){
+    const users = readUsers();
+    renderAdminList('admin-pending-list', users.filter(function(u){ return !u.approved; }), false);
+    renderAdminList('admin-approved-list', users.filter(function(u){ return !!u.approved; }), true);
+  }
   window.renderLoginAdminRoom = renderAdminRoom;
 
-  window.approveAdminUser = function(userId){
-    const id = normalizeId(userId); const users = readUsers(); const user = users.find(function(u){ return normalizeId(u.id)===id; });
-    if(!user){ safeToast('사용자를 찾을 수 없습니다','e'); return; }
-    user.approved = true; user.updatedAt = _nowIso(); writeUsers(users); renderAdminRoom(); safeToast('가입 승인 완료','s');
+  function renderAdminLoading(){
+    const p = el('admin-pending-list');
+    const a = el('admin-approved-list');
+    if(p) p.innerHTML = '<div class="admin-empty">가입신청 목록 불러오는 중...</div>';
+    if(a) a.innerHTML = '<div class="admin-empty">승인 계정 불러오는 중...</div>';
+  }
+
+  window.approveAdminUser = async function(userId){
+    const id = normalizeId(userId);
+    const users = await refreshUsersFromFirebase(false);
+    const user = users.find(function(u){ return normalizeId(u.id)===id; });
+    if(!user){ safeToast('사용자를 찾을 수 없습니다','e'); renderAdminRoom(); return; }
+    user.approved = true;
+    user.updatedAt = new Date().toISOString();
+    writeUsers(users);
+    await refreshUsersFromFirebase(true);
+    renderAdminRoom();
+    safeToast('가입 승인 완료','s');
   };
 
-  window.deleteAdminUser = function(userId){
-    const id = normalizeId(userId); if(!id){ safeToast('사용자를 찾을 수 없습니다','e'); return; }
-    const users = readUsers(); const user = users.find(function(u){ return normalizeId(u.id)===id; }); const label = user ? (user.name || user.id) : id;
-    if(!confirm('계정 "'+label+'"을 삭제할까요?\n삭제하면 Firebase 동기화 후에도 다시 나타나지 않습니다.')) return;
-    markUserDeleted(id); const next = users.filter(function(u){ return normalizeId(u.id)!==id; }); writeUsers(next); renderAdminRoom(); safeToast('계정을 삭제했습니다','s');
+  window.deleteAdminUser = async function(userId){
+    const id = normalizeId(userId);
+    if(!id) return;
+    if(!confirm('이 계정을 삭제할까요?')) return;
+    const deleted = _writeDeletedUserIds([].concat(_readDeletedUserIds(), [id]));
+    const users = (await refreshUsersFromFirebase(false)).filter(function(u){ return normalizeId(u.id)!==id; });
+    _writeUsersLocal(users, Date.now());
+    if(window._firebaseReady && window._REF){
+      try{
+        await window._REF.set({ loginUsers:users, _loginUsersSavedAt:Date.now(), loginDeletedUsers:deleted, _loginDeletedUsersSavedAt:Date.now() }, { merge:true });
+      }catch(e){
+        console.error('계정 삭제 Firebase 저장 실패:', e);
+        safeToast('계정 삭제 저장 실패', 'e');
+      }
+    }
+    renderAdminRoom();
+    safeToast('계정을 삭제했습니다','s');
   };
 
-  window.openLoginAdminRoom = function(){
+  window.openLoginAdminRoom = async function(){
     if(!requireAdminPin()) return;
-    const modal = el('login-admin-room'); if(modal){ modal.classList.add('show'); modal.setAttribute('aria-hidden','false'); }
-    const pending = el('admin-pending-list'); if(pending) pending.innerHTML = '<div class="admin-empty">가입신청 목록 불러오는 중...</div>';
-    refreshUsersFromFirebase(function(){ renderAdminRoom(); });
+    const modal = el('login-admin-room');
+    if(modal){ modal.classList.add('show'); modal.setAttribute('aria-hidden','false'); }
+    renderAdminLoading();
+    await refreshUsersFromFirebase(true);
+    renderAdminRoom();
   };
-  window.closeLoginAdminRoom = function(){ const modal = el('login-admin-room'); if(modal){ modal.classList.remove('show'); modal.setAttribute('aria-hidden','true'); } };
+
+  window.closeLoginAdminRoom = function(){
+    const modal = el('login-admin-room');
+    if(modal){ modal.classList.remove('show'); modal.setAttribute('aria-hidden','true'); }
+  };
   window.openNoticeBoardFromAdminRoom = function(){
     if(typeof window.setNoticeAdmin === 'function') window.setNoticeAdmin(true);
     closeLoginAdminRoom();
