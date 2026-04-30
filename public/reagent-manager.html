@@ -4,7 +4,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta name="app-version" content="20260427-account-sync-pwa-restore">
+  <meta name="app-version" content="20260430-account-admin-sync-fix">
   <script>
     // Service Worker 등록 - network-first 전략
     if('serviceWorker' in navigator){
@@ -29,7 +29,7 @@
     }
     // 버전 체크
     (function(){
-      var VER = '20260427-account-sync-pwa-restore';
+      var VER = '20260430-account-admin-sync-fix';
       var stored = localStorage.getItem('_appVer');
       if(stored && stored !== VER){
         localStorage.setItem('_appVer', VER);
@@ -40,7 +40,7 @@
     })();
   </script>
 <meta charset="UTF-8">
-  <link rel="manifest" href="manifest.json?v=20260427-account-sync-pwa-restore">
+  <link rel="manifest" href="manifest.json?v=20260430-account-admin-sync-fix">
   <meta name="theme-color" content="#1677ff">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -48,7 +48,7 @@
 
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="시약장부-운영">
-  <link rel="apple-touch-icon" href="icon-192.png?v=20260427-account-sync-pwa-restore">
+  <link rel="apple-touch-icon" href="icon-192.png?v=20260430-account-admin-sync-fix">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>안성성모병원 ReagentAI</title>
 <!-- PWA_RESTORE_FINAL_20260427: 최종 계정수정본 + PWA 설치 설정 유지 -->
@@ -7397,6 +7397,8 @@ function openRegularReagentPicker(idx){
   const ADMIN_PIN = '5030';
   let signupCheckedId = '';
   let _loginUsersSyncing = false;
+  let _loginUsersRemoteCache = [];
+  let _loginUsersRemoteTs = 0;
 
   function safeToast(msg,type){
     if(typeof window.toast === 'function') window.toast(msg, type || 's');
@@ -7432,9 +7434,15 @@ function openRegularReagentPicker(idx){
     localStorage.setItem(LOGIN_USERS_TS_KEY, String(ts || Date.now()));
   }
   function writeUsers(arr){
-    const list = Array.isArray(arr) ? arr : [];
+    // 관리자 승인/삭제/가입신청 저장 시에도 최근 Firebase 계정 캐시와 병합해서 다른 기기 신청이 사라지지 않게 한다.
+    let list = Array.isArray(arr) ? arr : [];
+    if(Array.isArray(_loginUsersRemoteCache) && _loginUsersRemoteCache.length){
+      list = _mergeUsers(_loginUsersRemoteCache, list);
+    }
     const ts = Date.now();
     _writeUsersLocal(list, ts);
+    _loginUsersRemoteCache = list;
+    _loginUsersRemoteTs = ts;
     if(window._firebaseReady && window._REF){
       window._REF.set({ loginUsers:list, _loginUsersSavedAt:ts }, { merge:true }).catch(function(e){
         console.error('계정 Firebase 저장 실패:', e);
@@ -7442,24 +7450,67 @@ function openRegularReagentPicker(idx){
       });
     }
   }
+
+  function _usersSig(arr){
+    try{
+      return JSON.stringify((Array.isArray(arr)?arr:[]).map(function(u){
+        return Object.assign({}, u, { id: normalizeId(u && u.id) });
+      }).sort(function(a,b){ return String(a.id||'').localeCompare(String(b.id||'')); }));
+    }catch(e){ return ''; }
+  }
+
+  function _syncMergedUsersToFirebase(list, ts){
+    if(!(window._firebaseReady && window._REF)) return;
+    window._REF.set({ loginUsers:list, _loginUsersSavedAt:ts || Date.now() }, { merge:true }).catch(function(e){
+      console.error('계정 Firebase 병합 저장 실패:', e);
+    });
+  }
+
   window.__syncLoginUsersFromFirebase = function(remoteUsers, remoteTs){
     if(_loginUsersSyncing) return;
     const localUsers = readUsers();
     const localTs = Number(localStorage.getItem(LOGIN_USERS_TS_KEY) || 0);
     const rts = Number(remoteTs || 0);
-    if(Array.isArray(remoteUsers) && rts >= localTs){
-      _loginUsersSyncing = true;
-      _writeUsersLocal(remoteUsers, rts || Date.now());
-      _loginUsersSyncing = false;
-      if(typeof window.renderLoginAdminRoom === 'function') window.renderLoginAdminRoom();
+    const remoteList = Array.isArray(remoteUsers) ? remoteUsers : [];
+    _loginUsersRemoteCache = remoteList;
+    _loginUsersRemoteTs = rts;
+
+    const merged = _mergeUsers(remoteList, localUsers);
+    const nextTs = Math.max(localTs, rts, Date.now());
+
+    _loginUsersSyncing = true;
+    _writeUsersLocal(merged, nextTs);
+    _loginUsersSyncing = false;
+
+    // 예전 방식처럼 시간만 보고 덮어쓰지 않고, 양쪽 계정을 병합해서 가입신청 누락을 막는다.
+    if(_usersSig(merged) !== _usersSig(remoteList)){
+      _syncMergedUsersToFirebase(merged, nextTs);
+    }
+
+    if(typeof window.renderLoginAdminRoom === 'function') window.renderLoginAdminRoom(false);
+  };
+
+  function forceRefreshLoginUsersFromFirebase(done){
+    if(!(window._firebaseReady && window._REF)){
+      if(typeof done === 'function') done(false);
       return;
     }
-    if(localUsers.length && rts < localTs && window._firebaseReady && window._REF){
-      window._REF.set({ loginUsers:localUsers, _loginUsersSavedAt:localTs || Date.now() }, { merge:true }).catch(function(e){
-        console.error('계정 Firebase 재동기화 실패:', e);
-      });
-    }
-  };
+    window._REF.get().then(function(snap){
+      if(snap && snap.exists){
+        const data = snap.data() || {};
+        if(Array.isArray(data.loginUsers)){
+          window.__syncLoginUsersFromFirebase(data.loginUsers, data._loginUsersSavedAt || data._savedAt || 0);
+        }
+      }
+      if(typeof done === 'function') done(true);
+    }).catch(function(e){
+      console.error('계정 Firebase 강제 새로고침 실패:', e);
+      safeToast('가입신청 목록 새로고침 실패', 'e');
+      if(typeof done === 'function') done(false);
+    });
+  }
+  window.forceRefreshLoginUsersFromFirebase = forceRefreshLoginUsersFromFirebase;
+
   function getCurrentUser(){
     try{
       const auto = JSON.parse(localStorage.getItem(LOGIN_AUTO_KEY)||'null');
@@ -7623,7 +7674,15 @@ function openRegularReagentPicker(idx){
     }).join('');
   }
 
-  function renderAdminRoom(){
+  function renderAdminRoom(forceRefresh){
+    const pendingBox = el('admin-pending-list');
+    const approvedBox = el('admin-approved-list');
+    if(forceRefresh && window._firebaseReady && window._REF){
+      if(pendingBox) pendingBox.innerHTML = '<div class="admin-empty">가입신청 목록 불러오는 중...</div>';
+      if(approvedBox) approvedBox.innerHTML = '<div class="admin-empty">승인 계정 불러오는 중...</div>';
+      forceRefreshLoginUsersFromFirebase(function(){ renderAdminRoom(false); });
+      return;
+    }
     const users = readUsers();
     renderAdminList('admin-pending-list', users.filter(function(u){ return !u.approved; }), false);
     renderAdminList('admin-approved-list', users.filter(function(u){ return !!u.approved; }), true);
@@ -7655,7 +7714,7 @@ function openRegularReagentPicker(idx){
     if(!requireAdminPin()) return;
     const modal = el('login-admin-room');
     if(modal){ modal.classList.add('show'); modal.setAttribute('aria-hidden','false'); }
-    renderAdminRoom();
+    renderAdminRoom(true);
   };
   window.closeLoginAdminRoom = function(){
     const modal = el('login-admin-room');
