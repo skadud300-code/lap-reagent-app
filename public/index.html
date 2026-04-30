@@ -4,7 +4,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta name="app-version" content="20260430-login-firebase-hardfix">
+  <meta name="app-version" content="20260430-signup-name-direct-fix">
   <script>
     // Service Worker 등록 - network-first 전략
     if('serviceWorker' in navigator){
@@ -29,7 +29,7 @@
     }
     // 버전 체크
     (function(){
-      var VER = '20260430-login-firebase-hardfix';
+      var VER = '20260430-signup-name-direct-fix';
       var stored = localStorage.getItem('_appVer');
       if(stored && stored !== VER){
         localStorage.setItem('_appVer', VER);
@@ -40,7 +40,7 @@
     })();
   </script>
 <meta charset="UTF-8">
-  <link rel="manifest" href="manifest.json?v=20260430-login-firebase-hardfix">
+  <link rel="manifest" href="manifest.json?v=20260430-signup-name-direct-fix">
   <meta name="theme-color" content="#1677ff">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -48,7 +48,7 @@
 
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="시약장부-운영">
-  <link rel="apple-touch-icon" href="icon-192.png?v=20260430-login-firebase-hardfix">
+  <link rel="apple-touch-icon" href="icon-192.png?v=20260430-signup-name-direct-fix">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>안성성모병원 ReagentAI</title>
 <!-- PWA_RESTORE_FINAL_20260427: 최종 계정수정본 + PWA 설치 설정 유지 -->
@@ -1180,7 +1180,7 @@ html, body{
 .modal, .notice-board, .order-sheet, .reagent-pills{
   overscroll-behavior-y: contain !important;
 }
-
+\n\n/* signup name input direct activation fix - only login/signup screen */\n#signup-name-input{pointer-events:auto !important;-webkit-user-select:text !important;user-select:text !important;opacity:1 !important;touch-action:manipulation !important;}\n#signup-name-input[disabled],#signup-name-input[readonly]{pointer-events:auto !important;opacity:1 !important;}\n
 </style>
 <script>
   var pdfjsScript = document.createElement('script');
@@ -1495,7 +1495,7 @@ ReagentAI</div>
       <div id="login-pane-signup" class="login-pane">
         <div class="login-pane-title">회원가입 신청</div>
         <div class="login-pane-desc">아이디 중복 확인 후 신청하면 관리자 승인 뒤 로그인할 수 있습니다.</div>
-        <div class="login-field"><input id="signup-name-input" type="text" placeholder="이름" autocomplete="name"></div>
+        <div class="login-field"><input id="signup-name-input" type="text" placeholder="이름" autocomplete="name" tabindex="0" autocapitalize="off" spellcheck="false" onpointerdown="this.disabled=false;this.readOnly=false;" onfocus="this.disabled=false;this.readOnly=false;"></div>
         <div class="login-field">
           <select id="signup-part-input">
             <option value="">파트 선택</option>
@@ -4539,7 +4539,7 @@ function saveEmergencyOrder(){
 function printEmergencyOrder(){
   const source = buildEmergencyOrderPayload();
   if(!source.items.length){ toast('출력할 품목이 없어요','w'); return; }
-  const html = `<!doctype html><html><head><meta charset="utf-8"><title>응급발주서</title><style>body{font-family:Arial,'Noto Sans KR',sans-serif;padding:24px;color:#111}h1{font-size:22px;margin:0 0 8px}table{width:100%;border-collapse:collapse;margin-top:16px}th,td{border:1px solid #cfd8e3;padding:8px;font-size:13px}th{background:#f5f8fc}.meta{margin:8px 0 14px;font-size:13px;line-height:1.7}.note{margin-top:18px;font-size:13px;line-height:1.7}.sign-wrap{display:flex;justify-content:flex-end;margin-top:28px}.sign{width:300px;border-collapse:collapse}.sign th,.sign td{border:1px solid #cfd8e3;text-align:center;padding:8px;font-size:12px}.sign th{background:#fff}.sign td{height:64px}@media print{body{padding:16px}}</style></head><body><h1>응급발주서</h1><div class="meta">일자: ${source.savedAt.slice(0,10)}<br>파트: ${esc(source.partName)}<br>장비: ${esc(source.deviceLabel || source.device || '-')}<br>업체: ${esc(source.vendorName || '-')}</div><table><thead><tr><th>품목명</th><th>LOT</th><th>수량</th></tr></thead><tbody>${source.items.map(it=>`<tr><td>${esc(it.name||'')}</td><td>${esc(it.lot||'')}</td><td>${esc(it.qty||'')}</td></tr>`).join('')}</tbody></table><div class="note">비고: ${esc(source.note||'-')}<br>요청자: ${esc(source.requester||'-')}</div><div class="sign-wrap"><table class="sign"><tr><th>담당자</th><th>팀장</th><th>과장</th></tr><tr><td></td><td></td><td></td></tr></table></div>
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>응급발주서</title><style>body{font-family:Arial,'Noto Sans KR',sans-serif;padding:24px;color:#111}h1{font-size:22px;margin:0 0 8px}table{width:100%;border-collapse:collapse;margin-top:16px}th,td{border:1px solid #cfd8e3;padding:8px;font-size:13px}th{background:#f5f8fc}.meta{margin:8px 0 14px;font-size:13px;line-height:1.7}.note{margin-top:18px;font-size:13px;line-height:1.7}.sign-wrap{display:flex;justify-content:flex-end;margin-top:28px}.sign{width:300px;border-collapse:collapse}.sign th,.sign td{border:1px solid #cfd8e3;text-align:center;padding:8px;font-size:12px}.sign th{background:#fff}.sign td{height:64px}@media print{body{padding:16px}}</style></head><body><h1>응급발주서</h1><div class="meta">일자: ${source.savedAt.slice(0,10)}<br>파트: ${esc(source.partName)}<br>장비: ${esc(source.deviceLabel || source.device || '-')}<br>업체: ${esc(source.vendorName || '-')}</div><table><thead><tr><th>품목명</th><th>LOT</th><th>수량</th></tr></thead><tbody>${source.items.map(it=>`<tr><td>${esc(it.name||'')}</td><td>${esc(it.lot||'')}</td><td>${esc(it.qty||'')}</td></tr>`).join('')}</tbody></table><div class="note">비고: ${esc(source.note||'-')}<br>요청자: ${esc(source.requester||'-')}</div><div class="sign-wrap"><table class="sign"><tr><th>담당자</th><th>팀장</th><th>과장</th></tr><tr><td></td><td></td><td></td></tr></table></div>\n<script>\n(function(){\n  function forceSignupNameInputActive(){\n    var n=document.getElementById('signup-name-input');\n    if(!n) return;\n    n.disabled=false; n.readOnly=false;\n    n.removeAttribute('disabled'); n.removeAttribute('readonly'); n.removeAttribute('aria-disabled');\n    n.tabIndex=0; n.style.pointerEvents='auto'; n.style.opacity='1';\n  }\n  window.forceSignupNameInputActive=forceSignupNameInputActive;\n  document.addEventListener('DOMContentLoaded',function(){\n    forceSignupNameInputActive();\n    var tab=document.getElementById('login-tab-signup');\n    if(tab) tab.addEventListener('click',function(){setTimeout(forceSignupNameInputActive,0);setTimeout(forceSignupNameInputActive,120);});\n    var pane=document.getElementById('login-pane-signup');\n    if(pane){pane.addEventListener('touchstart',forceSignupNameInputActive,{passive:true});pane.addEventListener('click',forceSignupNameInputActive);}\n    var part=document.getElementById('signup-part-input');\n    if(part) part.addEventListener('change',forceSignupNameInputActive);\n  });\n  setInterval(forceSignupNameInputActive,1000);\n})();\n</script>\n
 </body></html>`;
 
   try{
