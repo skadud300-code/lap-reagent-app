@@ -4,7 +4,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta name="app-version" content="20260430-login-firebase-hardfix-nameinput">
+  <meta name="app-version" content="20260430-custom-device-color-sync">
   <script>
     // Service Worker 등록 - network-first 전략
     if('serviceWorker' in navigator){
@@ -29,7 +29,7 @@
     }
     // 버전 체크
     (function(){
-      var VER = '20260430-login-firebase-hardfix-nameinput';
+      var VER = '20260430-custom-device-color-sync';
       var stored = localStorage.getItem('_appVer');
       if(stored && stored !== VER){
         localStorage.setItem('_appVer', VER);
@@ -40,7 +40,7 @@
     })();
   </script>
 <meta charset="UTF-8">
-  <link rel="manifest" href="manifest.json?v=20260430-login-firebase-hardfix-nameinput">
+  <link rel="manifest" href="manifest.json?v=20260430-custom-device-color-sync">
   <meta name="theme-color" content="#1677ff">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -48,7 +48,7 @@
 
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="시약장부-운영">
-  <link rel="apple-touch-icon" href="icon-192.png?v=20260430-login-firebase-hardfix-nameinput">
+  <link rel="apple-touch-icon" href="icon-192.png?v=20260430-custom-device-color-sync">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>안성성모병원 ReagentAI</title>
 <!-- PWA_RESTORE_FINAL_20260427: 최종 계정수정본 + PWA 설치 설정 유지 -->
@@ -1066,8 +1066,6 @@ body table[data-print-ledger="1"] th:last-child, body table[data-print-ledger="1
   padding:0 20px;font-size:16px;color:#1a2842;font-weight:800;font-family:var(--sans);
 }
 .login-field input::placeholder{color:#98a4b5;font-weight:800;}
-.signup-name-field{position:relative;z-index:3;}
-#signup-name-input{pointer-events:auto !important;user-select:text !important;-webkit-user-select:text !important;touch-action:manipulation !important;}
 .login-line{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;}
 .login-check{display:flex;align-items:center;gap:10px;font-size:13px;color:#1f4ea8;font-weight:900;}
 .login-check input{width:24px;height:24px;accent-color:#2b7df1;}
@@ -1497,7 +1495,7 @@ ReagentAI</div>
       <div id="login-pane-signup" class="login-pane">
         <div class="login-pane-title">회원가입 신청</div>
         <div class="login-pane-desc">아이디 중복 확인 후 신청하면 관리자 승인 뒤 로그인할 수 있습니다.</div>
-        <div class="login-field signup-name-field"><input id="signup-name-input" type="text" placeholder="이름" autocomplete="off" autocapitalize="off" spellcheck="false" tabindex="1"></div>
+        <div class="login-field"><input id="signup-name-input" type="text" placeholder="이름" autocomplete="name"></div>
         <div class="login-field">
           <select id="signup-part-input">
             <option value="">파트 선택</option>
@@ -2786,14 +2784,21 @@ function getDvAccentColor(dv){
   if(key.startsWith('e801')) return 'var(--e801)';
   if(key.startsWith('b221')) return 'var(--blue)';
   if(key.startsWith('nx10n')) return 'var(--orange)';
+
+  // 커스텀 장비 색상 통일:
+  // goCustomDevice/buildCustomNav는 "같은 파트 안에서의 장비 순서"로 색을 정한다.
+  // 기존에는 전체 customDevices 순서로 색을 다시 계산해서
+  // 헤더/저장버튼/하단탭 색과 시약 선택 pill 색이 서로 달라질 수 있었다.
   const match = key.match(/^custom-(.+?)-(주시약|소모|cal)$/);
   if(match){
     const customList = Array.isArray(S.customDevices) ? S.customDevices : [];
-    const idx = customList.findIndex(x => String(x.id) === match[1]);
-    const device = idx > -1 ? customList[idx] : null;
+    const device = customList.find(x => String(x.id) === match[1]);
     if(device){
-      const spec = getCustomDeviceNavSpec(device, idx);
+      const samePartDevices = customList.filter(x => x.partId === device.partId);
+      const deviceIdx = Math.max(0, samePartDevices.findIndex(x => String(x.id) === match[1]));
+      const spec = getCustomDeviceNavSpec(device, deviceIdx);
       if(spec && spec.color) return spec.color;
+      if(device.color) return device.color;
     }
   }
   return 'var(--orange)';
@@ -7552,15 +7557,6 @@ function openRegularReagentPicker(idx){
     }
   }
   function normalizeId(v){ return String(v||'').trim().toLowerCase(); }
-  function forceEnableSignupName(){
-    const n = el('signup-name-input');
-    if(!n) return;
-    n.disabled = false;
-    n.readOnly = false;
-    n.removeAttribute('disabled');
-    n.removeAttribute('readonly');
-    n.style.pointerEvents = 'auto';
-  }
 
   window.loginGateSetTab = function(tab){
     const isSignup = tab === 'signup';
@@ -7572,14 +7568,6 @@ function openRegularReagentPicker(idx){
     if(tabSignup) tabSignup.classList.toggle('active', isSignup);
     if(paneLogin) paneLogin.classList.toggle('active', !isSignup);
     if(paneSignup) paneSignup.classList.toggle('active', isSignup);
-    if(isSignup){
-      forceEnableSignupName();
-      setTimeout(function(){
-        forceEnableSignupName();
-        const n = el('signup-name-input');
-        if(n && !String(n.value||'').trim()) n.focus();
-      }, 80);
-    }
   };
 
   window.loginGateCheckDuplicate = function(){
@@ -7598,7 +7586,6 @@ function openRegularReagentPicker(idx){
   };
 
   window.loginGateSignup = function(){
-    forceEnableSignupName();
     const name = String(el('signup-name-input') && el('signup-name-input').value || '').trim();
     const part = String(el('signup-part-input') && el('signup-part-input').value || '').trim();
     const id = normalizeId(el('signup-id-input') && el('signup-id-input').value);
