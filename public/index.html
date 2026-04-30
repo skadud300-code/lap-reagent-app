@@ -1307,7 +1307,7 @@ function openRegularReagentPicker(idx){
       }
       const data = snap.data();
       if(Array.isArray(data.loginUsers) && typeof window.__syncLoginUsersFromFirebase === 'function'){
-        window.__syncLoginUsersFromFirebase(data.loginUsers, data._loginUsersSavedAt || data._savedAt || 0);
+        window.__syncLoginUsersFromFirebase(data.loginUsers, data._loginUsersSavedAt || data._savedAt || 0, data.loginUsersDeleted || {});
       }
       if(!window._fsLastSave || data._savedAt > window._fsLastSave) {
         window._fsLastSave = data._savedAt;
@@ -7392,6 +7392,7 @@ function openRegularReagentPicker(idx){
 (function(){
   const LOGIN_USERS_KEY = 'reagentLoginUsers_v2';
   const LOGIN_USERS_TS_KEY = 'reagentLoginUsers_v2_savedAt';
+  const LOGIN_USERS_DELETED_KEY = 'reagentLoginUsers_v2_deleted';
   const LOGIN_AUTO_KEY = 'reagentLoginAutoUser_v2';
   const LOGIN_SESSION_KEY = 'reagentLoginSessionUser_v2';
   const ADMIN_PIN = '5030';
@@ -7429,22 +7430,52 @@ function openRegularReagentPicker(idx){
       return Array.isArray(arr) ? arr : [];
     }catch(e){ return []; }
   }
+  function readDeletedUsers(){
+    try{
+      const obj = JSON.parse(localStorage.getItem(LOGIN_USERS_DELETED_KEY)||'{}');
+      return obj && typeof obj === 'object' && !Array.isArray(obj) ? obj : {};
+    }catch(e){ return {}; }
+  }
+  function writeDeletedUsers(obj){
+    localStorage.setItem(LOGIN_USERS_DELETED_KEY, JSON.stringify(obj && typeof obj === 'object' ? obj : {}));
+  }
+  function _userTime(u){ return Date.parse((u && (u.updatedAt || u.createdAt)) || 0) || 0; }
+  function _mergeDeletedUsers(a,b){
+    const out = Object.assign({}, a || {});
+    Object.keys(b || {}).forEach(function(k){
+      const id = normalizeId(k);
+      if(!id) return;
+      out[id] = Math.max(Number(out[id] || 0), Number(b[k] || 0));
+    });
+    return out;
+  }
+  function _filterDeletedUsers(list, deleted){
+    const del = deleted || readDeletedUsers();
+    return (Array.isArray(list)?list:[]).filter(function(u){
+      const id = normalizeId(u && u.id);
+      const delTs = Number(del[id] || 0);
+      if(!id || !delTs) return true;
+      return _userTime(u) > delTs;
+    });
+  }
   function _writeUsersLocal(arr, ts){
     localStorage.setItem(LOGIN_USERS_KEY, JSON.stringify(Array.isArray(arr)?arr:[]));
     localStorage.setItem(LOGIN_USERS_TS_KEY, String(ts || Date.now()));
   }
-  function writeUsers(arr){
-    // 관리자 승인/삭제/가입신청 저장 시에도 최근 Firebase 계정 캐시와 병합해서 다른 기기 신청이 사라지지 않게 한다.
-    let list = Array.isArray(arr) ? arr : [];
-    if(Array.isArray(_loginUsersRemoteCache) && _loginUsersRemoteCache.length){
-      list = _mergeUsers(_loginUsersRemoteCache, list);
+  function writeUsers(arr, opts){
+    // 가입신청/승인은 최근 Firebase 계정 캐시와 병합한다.
+    // 단, 삭제는 원격 캐시와 다시 병합하면 삭제한 계정이 즉시 부활하므로 noRemoteMerge를 사용한다.
+    const deleted = readDeletedUsers();
+    let list = _filterDeletedUsers(Array.isArray(arr) ? arr : [], deleted);
+    if(!(opts && opts.noRemoteMerge) && Array.isArray(_loginUsersRemoteCache) && _loginUsersRemoteCache.length){
+      list = _filterDeletedUsers(_mergeUsers(_loginUsersRemoteCache, list), deleted);
     }
     const ts = Date.now();
     _writeUsersLocal(list, ts);
     _loginUsersRemoteCache = list;
     _loginUsersRemoteTs = ts;
     if(window._firebaseReady && window._REF){
-      window._REF.set({ loginUsers:list, _loginUsersSavedAt:ts }, { merge:true }).catch(function(e){
+      window._REF.set({ loginUsers:list, loginUsersDeleted:deleted, _loginUsersSavedAt:ts }, { merge:true }).catch(function(e){
         console.error('계정 Firebase 저장 실패:', e);
         safeToast('계정 저장 실패', 'e');
       });
@@ -7461,21 +7492,23 @@ function openRegularReagentPicker(idx){
 
   function _syncMergedUsersToFirebase(list, ts){
     if(!(window._firebaseReady && window._REF)) return;
-    window._REF.set({ loginUsers:list, _loginUsersSavedAt:ts || Date.now() }, { merge:true }).catch(function(e){
+    window._REF.set({ loginUsers:list, loginUsersDeleted:readDeletedUsers(), _loginUsersSavedAt:ts || Date.now() }, { merge:true }).catch(function(e){
       console.error('계정 Firebase 병합 저장 실패:', e);
     });
   }
 
-  window.__syncLoginUsersFromFirebase = function(remoteUsers, remoteTs){
+  window.__syncLoginUsersFromFirebase = function(remoteUsers, remoteTs, remoteDeleted){
     if(_loginUsersSyncing) return;
     const localUsers = readUsers();
     const localTs = Number(localStorage.getItem(LOGIN_USERS_TS_KEY) || 0);
     const rts = Number(remoteTs || 0);
     const remoteList = Array.isArray(remoteUsers) ? remoteUsers : [];
-    _loginUsersRemoteCache = remoteList;
+    const deleted = _mergeDeletedUsers(readDeletedUsers(), remoteDeleted || {});
+    writeDeletedUsers(deleted);
+    _loginUsersRemoteCache = _filterDeletedUsers(remoteList, deleted);
     _loginUsersRemoteTs = rts;
 
-    const merged = _mergeUsers(remoteList, localUsers);
+    const merged = _filterDeletedUsers(_mergeUsers(remoteList, localUsers), deleted);
     const nextTs = Math.max(localTs, rts, Date.now());
 
     _loginUsersSyncing = true;
@@ -7483,6 +7516,7 @@ function openRegularReagentPicker(idx){
     _loginUsersSyncing = false;
 
     // 예전 방식처럼 시간만 보고 덮어쓰지 않고, 양쪽 계정을 병합해서 가입신청 누락을 막는다.
+    // 삭제 tombstone(loginUsersDeleted)을 같이 저장해서 삭제한 계정이 Firebase 스냅샷으로 부활하지 않게 한다.
     if(_usersSig(merged) !== _usersSig(remoteList)){
       _syncMergedUsersToFirebase(merged, nextTs);
     }
@@ -7499,7 +7533,7 @@ function openRegularReagentPicker(idx){
       if(snap && snap.exists){
         const data = snap.data() || {};
         if(Array.isArray(data.loginUsers)){
-          window.__syncLoginUsersFromFirebase(data.loginUsers, data._loginUsersSavedAt || data._savedAt || 0);
+          window.__syncLoginUsersFromFirebase(data.loginUsers, data._loginUsersSavedAt || data._savedAt || 0, data.loginUsersDeleted || {});
         }
       }
       if(typeof done === 'function') done(true);
@@ -7703,9 +7737,15 @@ function openRegularReagentPicker(idx){
 
   window.deleteAdminUser = function(userId){
     const id = normalizeId(userId);
+    if(!id){ safeToast('삭제할 계정을 찾을 수 없습니다','e'); return; }
+    if(!confirm('이 계정을 삭제할까요?')) return;
+    const deleted = readDeletedUsers();
+    deleted[id] = Date.now();
+    writeDeletedUsers(deleted);
     const users = readUsers();
     const next = users.filter(function(u){ return normalizeId(u.id)!==id; });
-    writeUsers(next);
+    // 삭제는 원격 캐시와 병합하지 않는다. 병합하면 방금 삭제한 계정이 다시 살아난다.
+    writeUsers(next, { noRemoteMerge:true });
     renderAdminRoom();
     safeToast('계정을 삭제했습니다','s');
   };
