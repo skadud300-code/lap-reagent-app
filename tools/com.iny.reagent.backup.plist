@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  com.iny.reagent.backup.plist — 시약장부 로컬 자동 백업 launchd 설정
+  매일 오후 8시 실행. 맥북이 꺼져 있던 경우 로그인 후 RunAtLoad 로 즉시 실행.
+
+  설치: bash ~/reagent/tools/install_reagent_backup_launchd.sh
+
+  주의: 이 파일은 템플릿입니다.
+        설치 스크립트가 HOME 경로를 치환하여 ~/Library/LaunchAgents/ 에 복사합니다.
+        경로 변수(__HOME__)는 설치 시 실제 경로로 대체됩니다.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.iny.reagent.backup</string>
+
+    <!-- 매일 오후 8시 실행 -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>20</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <!--
+      RunAtLoad: 맥북이 오후 8시에 꺼져 있었다면 다음 로그인 시 즉시 한 번 실행.
+      launchd 는 예약 시각을 놓쳤을 때 RunAtLoad 가 true 이면 로드 직후 실행함.
+    -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/python3</string>
+        <string>__HOME__/reagent/tools/reagent_local_backup.py</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>__HOME__/reagent</string>
+
+    <key>StandardOutPath</key>
+    <string>__HOME__/Reagent_Backups/reagent_backup_stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>__HOME__/Reagent_Backups/reagent_backup_stderr.log</string>
+</dict>
+</plist>
