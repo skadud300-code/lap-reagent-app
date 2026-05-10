@@ -2776,6 +2776,141 @@ function refreshApp(){
   toast('화면 새로고침 완료','s');
 }
 const uid  = ()=> Date.now()+'-'+Math.random().toString(36).slice(2,6);
+
+// Parallel Test 이벤트 저장 보조 함수
+// LOT 개봉/변경 저장 흐름은 유지하고, Parallel 대상 여부와 이벤트 신호만 분리한다.
+function _parallelText(v){ return String(v==null?'':v).trim(); }
+function _parallelLower(v){ return _parallelText(v).toLowerCase(); }
+function _parallelJoin(item, fields){ return fields.map(k=>_parallelText(item&&item[k])).filter(Boolean).join(' '); }
+function _parallelHasAny(text, words){
+  const t=_parallelLower(text);
+  return words.some(w=>t.includes(String(w).toLowerCase()));
+}
+function _parallelDeviceBase(device){
+  const d=_parallelText(device);
+  if(d.startsWith('custom-')){
+    const m=d.match(/^custom-([^-]+)/);
+    return m?`custom-${m[1]}`:d;
+  }
+  return d.split('-')[0]||d;
+}
+function _parallelEquipmentName(device){
+  const base=_parallelDeviceBase(device);
+  if(base==='503') return 'Cobas c 503';
+  if(base==='e801') return 'Cobas e 801';
+  if(base==='b221') return 'Cobas b 221';
+  if(base==='nx10n') return 'NX10N';
+  if(base.startsWith('custom-')){
+    const id=base.replace(/^custom-/,'');
+    const cd=(S.customDevices||[]).find(x=>String(x.id)===String(id));
+    return cd?.name || cd?.deviceName || base;
+  }
+  return base || '';
+}
+function _parallelPart(device, item){
+  const base=_parallelDeviceBase(device||item?.device);
+  if(base==='503') return '화학';
+  if(base==='e801') return '면역';
+  if(base==='b221') return '혈액';
+  if(base==='nx10n') return '소변';
+  if(base.startsWith('custom-')){
+    const id=base.replace(/^custom-/,'');
+    const cd=(S.customDevices||[]).find(x=>String(x.id)===String(id));
+    const part=cd?.part || cd?.partName || item?.part || '';
+    if(part==='chem'||part==='임상화학') return '화학';
+    if(part==='immuno'||part==='Immunoassay') return '면역';
+    return part || '';
+  }
+  return item?.part || '';
+}
+function _parallelTestCode(item){
+  return _parallelText(item?.testCode || item?.code || item?.itemCode || item?.reagentCode || item?.name || item?.reagentName || item?.itemName);
+}
+function isParallelExcludedItem(item){
+  const fields=['type','itemType','reagentType','lotType','category','group','part','name','reagentName','itemName','productName','displayName','device'];
+  const text=_parallelJoin(item||{}, fields);
+  const auxWords=['시약소모품','소모품','소모','보조시약','보조시약류','auxiliary','sub reagent','sub-reagent','supplemental','consumable','cleaner','clean','wash','rinse','buffer','diluent','solution','detergent','tip','cup','probe','waste'];
+  const qcWords=['qc 물질','q/c 물질','qc','control','컨트롤','정도관리물질'];
+  return _parallelHasAny(text, auxWords) || _parallelHasAny(text, qcWords);
+}
+function _isCalParallelItem(item){
+  const text=_parallelJoin(item||{}, ['type','itemType','reagentType','lotType','category','group','name','reagentName','itemName','productName','displayName','device']);
+  if(_parallelHasAny(text, ['qc 물질','q/c 물질','qc','control','컨트롤'])) return false;
+  return _parallelHasAny(text, ['cal','calibrator','calibration','칼리브레이터','교정','standard','cfas']);
+}
+function _parallelEventType(item){
+  if(!item) return '';
+  if(isParallelExcludedItem(item)) return '';
+  if(_isCalParallelItem(item)) return 'cal_parallel_required';
+  return 'reagent_parallel_required';
+}
+function _parallelSafeId(v){
+  const cleaned=_parallelText(v).replace(/[^a-zA-Z0-9가-힣._-]+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'');
+  return cleaned || uid();
+}
+function _parallelBackupRows(){
+  try{ const rows=JSON.parse(localStorage.getItem('reagentManagerParallelEvents')||'[]'); return Array.isArray(rows)?rows:[]; }
+  catch(e){ return []; }
+}
+function _upsertParallelBackup(event){
+  const rows=_parallelBackupRows();
+  const idx=rows.findIndex(x=>x && x.id===event.id);
+  if(idx>=0) rows[idx]={...rows[idx],...event,updatedAt:event.updatedAt||new Date().toISOString()};
+  else rows.unshift(event);
+  localStorage.setItem('reagentManagerParallelEvents', JSON.stringify(rows));
+}
+function _saveParallelEvent(event){
+  if(!event || !event.id) return;
+  _upsertParallelBackup(event);
+  try{
+    if(window._firebaseReady && window._db){
+      window._db.collection('qcManager').doc('parallelEvents').collection('events').doc(event.id).set(event,{merge:true})
+        .catch(err=>console.warn('parallel event firebase save failed', err));
+    }
+  }catch(err){ console.warn('parallel event save failed', err); }
+}
+function createParallelLotChangeEvent(ctx){
+  const reagent=ctx?.reagent;
+  const oldLot=_parallelText(ctx?.oldLot);
+  const newLot=_parallelText(ctx?.newLot);
+  if(!reagent || !oldLot || !newLot || oldLot===newLot) return null;
+  const eventType=_parallelEventType({...reagent, lotType:ctx?.lotType, type:ctx?.lotType, device:ctx?.device||reagent.device, category:ctx?.category});
+  if(!eventType) return null;
+  const device=ctx?.device || reagent.device || '';
+  const equipmentKey=_parallelDeviceBase(device);
+  const testCode=_parallelTestCode(reagent);
+  const testName=_parallelText(reagent.name || reagent.reagentName || reagent.itemName || testCode);
+  const part=_parallelPart(device, reagent);
+  const key=[part,equipmentKey,testCode||testName,oldLot,newLot,eventType].map(_parallelSafeId).join('__');
+  const now=new Date().toISOString();
+  const event={
+    id:`parallel-event-${key}`,
+    eventType,
+    source:'reagent_manager',
+    status:'pending',
+    part,
+    equipmentName:_parallelEquipmentName(device),
+    equipmentKey,
+    reagentName:testName,
+    testName,
+    testCode,
+    oldLot,
+    newLot,
+    openedAt:ctx?.openedAt || '',
+    detectedAt:now,
+    sourceLogId:ctx?.sourceLogId || '',
+    sourceLogKey:ctx?.sourceLogKey || '',
+    operator:ctx?.operator || '',
+    lotType:ctx?.lotType || '',
+    category:ctx?.category || '',
+    message:'LOT 변경 — Parallel Test 필요',
+    duplicateKey:key,
+    createdAt:now,
+    updatedAt:now
+  };
+  _saveParallelEvent(event);
+  return event;
+}
 const esc  = s=> String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const tod  = ()=> new Date().toISOString().split('T')[0];
 const parseLocalDate = s=>{
@@ -3043,18 +3178,33 @@ function doRegister(){
     } else {
       if(it.unit) reagent.unit = it.unit;
     }
+    const openDate = document.getElementById('r-open-date').value || tod();
+    const closeDate = document.getElementById('r-close-date').value || '';
+    const noteVal = curType==='개봉M'?'main':curType==='개봉S'?'sub':curType==='폐기'?_discardType:note;
+    const recordId = uid();
     let needsP=false;
     if(['개봉M','개봉S'].includes(curType)&&it.lot){
       const prev=S.records.filter(r=>r.reagentId===reagent.id&&['개봉M','개봉S'].includes(r.type))
         .sort((a,b)=>new Date(b.registeredAt)-new Date(a.registeredAt))[0];
       if(prev&&prev.lot&&prev.lot!==it.lot){
-        needsP=true;
-        pp={reagentName:reagent.name,prevLot:prev.lot,newLot:it.lot,reagentId:reagent.id};
+        const pe=createParallelLotChangeEvent({
+          reagent,
+          oldLot:prev.lot,
+          newLot:it.lot,
+          openedAt:openDate,
+          operator:person,
+          lotType:curType,
+          category:curDevice,
+          device:curDevice,
+          sourceLogId:recordId,
+          sourceLogKey:`${reagent.id}:${openDate}:${curType}:${it.lot||''}`
+        });
+        if(pe){
+          needsP=true;
+          pp={reagentName:reagent.name,prevLot:prev.lot,newLot:it.lot,reagentId:reagent.id,eventId:pe.id,eventType:pe.eventType};
+        }
       }
     }
-    const openDate = document.getElementById('r-open-date').value || tod();
-    const closeDate = document.getElementById('r-close-date').value || '';
-    const noteVal = curType==='개봉M'?'main':curType==='개봉S'?'sub':curType==='폐기'?_discardType:note;
     // 개봉날짜 < 최근 입고날짜 체크
     if(['개봉M','개봉S'].includes(curType)){
       const lastIn = S.records.filter(r=>r.reagentId===reagent.id&&r.type==='입고')
@@ -3064,7 +3214,7 @@ function doRegister(){
         return;
       }
     }
-    S.records.unshift({id:uid(),reagentId:reagent.id,device:curDevice,type:curType,
+    S.records.unshift({id:recordId,reagentId:reagent.id,device:curDevice,type:curType,
       lot:it.lot||'',qty:it.qty||globalQty,expiry:it.expiry||'',person,
       note:noteVal,
       registeredAt:curType==='폐기'?openDate:(curType==='입고'?tod():openDate),
@@ -3758,11 +3908,19 @@ function saveReagent(){
 // PARALLEL
 // ══════════════════════════════════════
 function showPar(){
+  const isCalParallel = pendPar && pendPar.eventType === 'cal_parallel_required';
+  const modal = document.getElementById('par-modal');
+  const titleEl = modal?.querySelector('.modal-title');
+  const descEl = modal?.querySelector('.modal-desc');
+  if(titleEl) titleEl.textContent = isCalParallel ? 'Cal LOT 변경 — Cal Parallel 필요' : 'LOT 변경 — Parallel Test 필요';
+  if(descEl) descEl.innerHTML = isCalParallel
+    ? 'Cal 물질의 LOT가 변경되었습니다.<br><strong>Cal Parallel</strong> 확인이 필요합니다.'
+    : '동일 시약의 LOT가 변경되었습니다.<br>신규 LOT 개봉 전 <strong>Parallel Test</strong>가 필요합니다.';
   document.getElementById('par-info').innerHTML=`
     <div class="mi-row"><span class="mi-l">시약명</span><span class="mi-v">${esc(pendPar.reagentName)}</span></div>
     <div class="mi-row"><span class="mi-l">이전 LOT</span><span style="color:var(--red)">${esc(pendPar.prevLot)}</span></div>
     <div class="mi-row"><span class="mi-l">신규 LOT</span><span class="mi-v">${esc(pendPar.newLot)}</span></div>`;
-  document.getElementById('par-modal').style.display='flex';
+  modal.style.display='flex';
 }
 function openParFor(id){
   const r=S.records.find(x=>x.id===id);if(!r)return;
@@ -4589,14 +4747,29 @@ function doQuickOpen(reagentId, lot, expiry, device, typeStr, person, ibId, subD
   // LOT 변경 감지
   let needsP = false;
   let pp2 = null;
+  const reagent = S.reagents.find(r=>r.id===reagentId);
   const prev = S.records.filter(r=>r.reagentId===reagentId&&['개봉M','개봉S'].includes(r.type))
     .sort((a,b)=>new Date(b.registeredAt)-new Date(a.registeredAt))[0];
+  const recordId = uid();
   if(prev && prev.lot && prev.lot !== lot){
-    needsP = true;
-    const reagent = S.reagents.find(r=>r.id===reagentId);
-    pp2 = {reagentName: reagent?reagent.name:'', prevLot: prev.lot, newLot: lot, reagentId};
+    const pe=createParallelLotChangeEvent({
+      reagent,
+      oldLot:prev.lot,
+      newLot:lot,
+      openedAt:tod(),
+      operator:person,
+      lotType:typeStr,
+      category:device,
+      device,
+      sourceLogId:recordId,
+      sourceLogKey:`${reagentId}:${tod()}:${typeStr}:${lot||''}`
+    });
+    if(pe){
+      needsP = true;
+      pp2 = {reagentName: reagent?reagent.name:'', prevLot: prev.lot, newLot: lot, reagentId, eventId:pe.id, eventType:pe.eventType};
+    }
   }
-  S.records.unshift({id:uid(),reagentId,device,type:typeStr,
+  S.records.unshift({id:recordId,reagentId,device,type:typeStr,
     lot,qty:1,expiry,person,
     note:subDevice ? subDevice : (typeStr==='개봉M'?'main':'sub'),
     ibId:ibId||'',
