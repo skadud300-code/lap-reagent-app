@@ -1026,19 +1026,21 @@ body table[data-print-ledger="1"] th:last-child, body table[data-print-ledger="1
   border:1px solid rgba(211,221,236,.95);
 }
 .login-hero{
-  padding:28px 24px 30px;
-  background:linear-gradient(135deg,#5ea7ff 0%,#3780de 70%,#2c6fd1 100%);
-  color:#fff;text-align:center;
+  padding:34px 24px 28px;
+  background:linear-gradient(180deg,#ffffff 0%,#f7faff 100%);
+  color:#14233b;text-align:center;
+  border-bottom:1px solid rgba(221,229,241,.9);
 }
 .login-hero-icon{
-  width:86px;height:86px;margin:0 auto 16px;border-radius:26px;
+  width:132px;height:132px;margin:0 auto 16px;border-radius:34px;
   display:flex;align-items:center;justify-content:center;
-  background:rgba(255,255,255,.12);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);
+  background:linear-gradient(180deg,#ffffff 0%,#f5f8fd 100%);
+  box-shadow:0 22px 52px rgba(24,50,92,.12), inset 0 0 0 1px rgba(218,228,242,.95);
+  overflow:hidden;
 }
 .login-hero-icon svg{width:46px;height:46px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;opacity:.95;}
-.login-hero-title{font-size:23px;font-weight:900;line-height:1.2;letter-spacing:-.6px;white-space:pre-line;}
-.login-hero-sub{font-size:12px;line-height:1.65;margin-top:10px;color:rgba(255,255,255,.9);font-weight:700;}
+.login-hero-title{font-size:12px;font-weight:900;line-height:1.35;letter-spacing:.08em;white-space:normal;color:#64748b;text-transform:uppercase;}
+.login-hero-sub{font-size:12px;line-height:1.65;margin-top:8px;color:#526174;font-weight:800;}
 .login-body{padding:18px 20px 22px;background:linear-gradient(180deg,#fbfcff 0%,#f5f7fb 100%);}
 .login-cap{
   display:inline-flex;align-items:center;padding:8px 14px;border-radius:999px;
@@ -1856,8 +1858,7 @@ function openRegularReagentPicker(idx){
     if(!window._fsInitialLoadDone){
       window._fsSaveBlockedReason = 'before_initial_load';
       if(el){ el.innerHTML = '⏳'; el.style.color='rgba(255,255,255,0.4)'; }
-      if(typeof toast === 'function') toast('Firebase 데이터 로딩 후 다시 저장해주세요','w');
-      console.warn('Firestore 첫 로딩 전 저장을 막았습니다. 오래된 localStorage가 Firebase를 덮어쓰는 것을 방지합니다.');
+      console.warn('[save blocked] Firebase initial load is not complete');
       return false;
     }
     if(window._fsRemoteSeen && (!Array.isArray(S.reagents) || S.reagents.length === 0)){
@@ -1996,10 +1997,9 @@ function openRegularReagentPicker(idx){
   <div class="login-shell">
     <div class="login-hero">
       <div class="login-hero-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><path d="M9 4h6"></path><path d="M10 4v4.5l-4.8 7.5A3 3 0 0 0 7.7 20h8.6a3 3 0 0 0 2.5-4l-4.8-7.5V4"></path><path d="M8.5 14h7"></path></svg>
+        <img src="iny-symbol.png" alt="" style="width:330px;height:220px;object-fit:contain;display:block;max-width:none;">
       </div>
-      <div class="login-hero-title">안성성모병원
-ReagentAI</div>
+      <div class="login-hero-title">안성성모병원 ReagentAI</div>
       <div class="login-hero-sub">시약장부 로그인 · 공지사항<br>승인된 직원만 사용</div>
     </div>
     <div class="login-body">
@@ -2124,7 +2124,9 @@ ReagentAI</div>
         <div style="position:relative;z-index:2;padding:18px;display:flex;flex-direction:column;min-height:300px;">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
             <div id="hero-hospital-chip" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:18px;background:rgba(255,255,255,0.72);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 12px 30px rgba(15,23,42,0.10), inset 0 0 0 1px rgba(255,255,255,0.58);">
-              <div id="hero-hospital-icon" style="width:42px;height:42px;border-radius:14px;background:linear-gradient(180deg,rgba(255,255,255,0.96) 0%,rgba(245,248,255,0.92) 100%);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 20px rgba(16,24,40,0.15);font-size:20px;">🏥</div>
+              <span style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:0 0 36px;">
+                <img id="hero-iny-symbol" src="iny-symbol.png" alt="INY" style="width:180px;height:120px;object-fit:contain;display:block;max-width:none;">
+              </span>
               <div>
                 <div id="hero-hospital-name" style="font-size:16px;font-weight:900;letter-spacing:-0.5px;color:#14213d;">안성성모병원 ReagentAI</div>
                 <div id="hero-hospital-subtitle" style="font-size:11px;color:#5b6475;font-family:var(--mono);margin-top:2px;">Clinical Pathology / Smart Inventory</div>
