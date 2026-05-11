@@ -1014,47 +1014,50 @@ body table[data-print-ledger="1"] th:last-child, body table[data-print-ledger="1
   position:fixed;inset:0;z-index:5000;
   display:flex;align-items:flex-start;justify-content:center;
   overflow:auto;padding:18px 14px 28px;
-  background:linear-gradient(180deg,#eef3fb 0%,#e8eef7 52%,#e2e8f3 100%);
+  background:#f7f9fc;
 }
 .login-gate[hidden]{display:none !important;}
 .login-shell{
-  width:min(100%,680px);
-  background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(248,250,255,.98));
-  border-radius:34px;
+  width:min(100%,520px);
+  max-width:calc(100vw - 28px);
+  box-sizing:border-box;
+  background:#fff;
+  border-radius:28px;
   overflow:hidden;
-  box-shadow:0 28px 70px rgba(31,55,104,.16), inset 0 0 0 1px rgba(255,255,255,.62);
-  border:1px solid rgba(211,221,236,.95);
+  box-shadow:0 28px 72px rgba(20,32,54,.12);
+  border:1px solid rgba(221,227,236,.95);
 }
 .login-hero{
-  padding:34px 24px 28px;
-  background:linear-gradient(180deg,#ffffff 0%,#f7faff 100%);
+  padding:42px 28px 26px;
+  background:#fff;
   color:#14233b;text-align:center;
-  border-bottom:1px solid rgba(221,229,241,.9);
+  border-bottom:1px solid rgba(229,234,242,.92);
 }
 .login-hero-icon{
-  width:132px;height:132px;margin:0 auto 16px;border-radius:34px;
+  width:220px;height:150px;margin:0 auto 18px;border-radius:24px;
   display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(180deg,#ffffff 0%,#f5f8fd 100%);
-  box-shadow:0 22px 52px rgba(24,50,92,.12), inset 0 0 0 1px rgba(218,228,242,.95);
+  background:#fff;
+  box-shadow:0 18px 46px rgba(24,50,92,.10), inset 0 0 0 1px rgba(224,231,241,.95);
   overflow:hidden;
 }
+.login-hero-icon img{width:430px;height:286px;max-width:none;object-fit:contain;display:block;}
 .login-hero-icon svg{width:46px;height:46px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;opacity:.95;}
-.login-hero-title{font-size:12px;font-weight:900;line-height:1.35;letter-spacing:.08em;white-space:normal;color:#64748b;text-transform:uppercase;}
-.login-hero-sub{font-size:12px;line-height:1.65;margin-top:8px;color:#526174;font-weight:800;}
-.login-body{padding:18px 20px 22px;background:linear-gradient(180deg,#fbfcff 0%,#f5f7fb 100%);}
+.login-hero-title{font-size:12px;font-weight:800;line-height:1.35;letter-spacing:.04em;white-space:normal;color:#7a8798;text-transform:none;}
+.login-hero-sub{font-size:12px;line-height:1.65;margin-top:7px;color:#8a96a8;font-weight:700;}
+.login-body{padding:22px 24px 26px;background:#fbfcfe;}
 .login-cap{
   display:inline-flex;align-items:center;padding:8px 14px;border-radius:999px;
-  background:#eef3fb;color:#3b82f6;font-size:11px;font-family:var(--mono);font-weight:800;letter-spacing:.08em;
+  background:#f0f4f9;color:#5d6f88;font-size:11px;font-family:var(--mono);font-weight:800;letter-spacing:.08em;
 }
 .login-tabs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 20px;}
 .login-tab{
-  height:62px;border:none;border-radius:20px;cursor:pointer;
-  background:#e7edf7;color:#66758b;font-size:16px;font-weight:900;
-  box-shadow:inset 0 0 0 1px rgba(211,221,236,.9);
+  height:56px;border:none;border-radius:16px;cursor:pointer;
+  background:#edf2f7;color:#66758b;font-size:15px;font-weight:900;
+  box-shadow:inset 0 0 0 1px rgba(218,226,237,.95);
 }
 .login-tab.active{
-  color:#fff;background:linear-gradient(180deg,#2b87ff 0%,#2476e9 100%);
-  box-shadow:0 18px 34px rgba(37,118,233,.24), inset 0 0 0 1px rgba(255,255,255,.15);
+  color:#fff;background:#1f6feb;
+  box-shadow:0 14px 28px rgba(31,111,235,.22), inset 0 0 0 1px rgba(255,255,255,.14);
 }
 .login-pane{display:none;}
 .login-pane.active{display:block;}
@@ -1062,9 +1065,9 @@ body table[data-print-ledger="1"] th:last-child, body table[data-print-ledger="1
 .login-pane-desc{margin-top:10px;color:#637287;font-size:12px;line-height:1.6;font-weight:700;}
 .login-field{margin-top:14px;}
 .login-field input,.login-field select{
-  width:100%;height:64px;border:none;outline:none;border-radius:22px;
-  background:linear-gradient(180deg,#f6f8fc,#eef3f9);
-  box-shadow:inset 0 0 0 2px rgba(214,223,236,.96);
+  width:100%;height:60px;border:none;outline:none;border-radius:18px;
+  background:#fff;
+  box-shadow:inset 0 0 0 1px rgba(210,219,232,.98);
   padding:0 20px;font-size:16px;color:#1a2842;font-weight:800;font-family:var(--sans);
 }
 .login-field input::placeholder{color:#98a4b5;font-weight:800;}
@@ -1073,17 +1076,17 @@ body table[data-print-ledger="1"] th:last-child, body table[data-print-ledger="1
 .login-check input{width:24px;height:24px;accent-color:#2b7df1;}
 .login-right-note{font-size:12px;color:#8b97a8;font-weight:900;}
 .login-main-btn{
-  width:100%;height:74px;border:none;border-radius:24px;cursor:pointer;margin-top:16px;
-  background:linear-gradient(180deg,#3d95ff 0%,#2a7eed 100%);color:#fff;font-size:22px;font-weight:900;letter-spacing:.06em;
-  box-shadow:0 20px 34px rgba(42,126,237,.25), inset 0 0 0 1px rgba(255,255,255,.15);
+  width:100%;height:66px;border:none;border-radius:20px;cursor:pointer;margin-top:16px;
+  background:#1f6feb;color:#fff;font-size:20px;font-weight:900;letter-spacing:.06em;
+  box-shadow:0 18px 32px rgba(31,111,235,.23), inset 0 0 0 1px rgba(255,255,255,.15);
 }
 .login-main-btn.secondary{
-  height:60px;margin-top:18px;font-size:18px;letter-spacing:0;background:linear-gradient(180deg,#3187f8 0%,#2a78e3 100%);
+  height:58px;margin-top:18px;font-size:17px;letter-spacing:0;background:#1f6feb;
 }
 .login-cta-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;}
 .login-sub-btn{
-  height:58px;border:none;border-radius:22px;cursor:pointer;background:linear-gradient(180deg,#ffffff,#f4f7fc);color:#223248;
-  font-size:15px;font-weight:900;box-shadow:inset 0 0 0 2px rgba(214,223,236,.96);
+  height:54px;border:none;border-radius:18px;cursor:pointer;background:#fff;color:#223248;
+  font-size:14px;font-weight:900;box-shadow:inset 0 0 0 1px rgba(214,223,236,.96);
 }
 .login-help{margin-top:12px;min-height:24px;color:#718095;font-size:12px;line-height:1.55;font-weight:800;}
 .login-help.ok{color:#0f9f66;}
@@ -1092,8 +1095,8 @@ body table[data-print-ledger="1"] th:last-child, body table[data-print-ledger="1
 .login-inline{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;}
 .login-inline .check-btn{
   height:58px;padding:0 18px;border:none;border-radius:18px;cursor:pointer;
-  background:linear-gradient(180deg,#ffffff,#f4f7fc);color:#2a74d9;font-size:13px;font-weight:900;
-  box-shadow:inset 0 0 0 2px rgba(214,223,236,.96);
+  background:#fff;color:#2a74d9;font-size:13px;font-weight:900;
+  box-shadow:inset 0 0 0 1px rgba(214,223,236,.96);
 }
 .login-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .login-user-chip{
@@ -1136,11 +1139,13 @@ body table[data-print-ledger="1"] th:last-child, body table[data-print-ledger="1
 .admin-empty{padding:16px;border-radius:18px;background:#f6f9ff;color:#7a8698;font-weight:800;text-align:center;border:1px dashed rgba(214,223,236,.95);}
 #more-admin-room-wrap{margin-bottom:10px;}
 @media (max-width:680px){
-  .login-shell{border-radius:30px;}
-  .login-hero{padding:24px 18px 26px;}
-  .login-body{padding:16px 16px 20px;}
-  .login-main-btn{height:70px;font-size:20px;}
-  .login-field input,.login-field select{height:60px;font-size:15px;}
+  .login-shell{width:calc(100vw - 28px);border-radius:26px;}
+  .login-hero{padding:32px 18px 22px;}
+  .login-hero-icon{width:196px;height:134px;}
+  .login-hero-icon img{width:384px;height:256px;}
+  .login-body{padding:18px 16px 20px;}
+  .login-main-btn{height:64px;font-size:19px;}
+  .login-field input,.login-field select{height:58px;font-size:15px;}
   .login-grid-2{grid-template-columns:1fr;}
   .login-cta-row{grid-template-columns:1fr 1fr;}
   .admin-room-card{padding:16px;}
@@ -1997,7 +2002,7 @@ function openRegularReagentPicker(idx){
   <div class="login-shell">
     <div class="login-hero">
       <div class="login-hero-icon" aria-hidden="true">
-        <img src="iny-symbol.png" alt="" style="width:330px;height:220px;object-fit:contain;display:block;max-width:none;">
+        <img src="iny-symbol.png" alt="INY">
       </div>
       <div class="login-hero-title">안성성모병원 ReagentAI</div>
       <div class="login-hero-sub">시약장부 로그인 · 공지사항<br>승인된 직원만 사용</div>
@@ -3358,6 +3363,7 @@ function doRegister(){
     }
     S.records.unshift({id:recordId,reagentId:reagent.id,device:curDevice,type:curType,
       lot:it.lot||'',qty:it.qty||globalQty,expiry:it.expiry||'',person,
+      qtyUnit:(curType==='입고'&&_isCalQcDeviceKey(curDevice))?'box':'',
       note:noteVal,
       registeredAt:curType==='폐기'?openDate:(curType==='입고'?tod():openDate),
       parallelDone:false,needsParallel:needsP});
@@ -3476,11 +3482,10 @@ function onReagentSearchInput(pageKey, rawValue){
     return;
   }
   const dv = _currentDvByPageKey(pageKey);
-  const list = S.reagents
-    .filter(r => r.device === dv)
-    .map(r => ({ id:r.id, name:String(r.name||''), storage:String(r.storage||''), unit:String(r.unit||'') }))
-    .filter(r => {
-      const n = r.name.toLowerCase();
+  const list = _reagentDisplayGroups(dv)
+    .map(g => ({ id:g.primary.id, ids:g.ids, name:String(g.name||''), storage:String(g.storage||''), unit:String(g.unit||'') }))
+    .filter(g => {
+      const n = g.name.toLowerCase();
       return n.startsWith(q) || n.includes(q);
     })
     .sort((a,b) => {
@@ -3498,7 +3503,7 @@ function onReagentSearchInput(pageKey, rawValue){
     return;
   }
   box.innerHTML = `<div class="reagent-search-head"><div class="reagent-search-title">검색 결과 ${list.length}개</div><button type="button" class="reagent-result-close" onclick="cancelReagentSearch('${pageKey}')">×</button></div>` + list.map((item, idx) => {
-    const meta = _latestSearchMeta(item.id);
+    const meta = (item.ids || [item.id]).map(id=>_latestSearchMeta(id)).filter(Boolean)[0] || '';
     return `<button type="button" class="reagent-search-item" onclick="_selectReagentFromSearch('${pageKey}','${dv}','${item.id}')"><div><div class="reagent-result-name">${idx+1}. ${esc(item.name)}</div><div class="reagent-result-tags">${item.storage ? `<span class="reagent-result-tag">${esc(item.storage)}</span>` : ''}${item.unit ? `<span class="reagent-result-meta">단위 ${esc(item.unit)}</span>` : ''}${meta ? `<span class="reagent-result-meta">${esc(meta)}</span>` : ''}</div></div><span class="reagent-result-pick">선택</span></button>`;
   }).join('');
   box.classList.add('show');
@@ -3533,20 +3538,65 @@ function getDvAccentColor(dv){
   return 'var(--orange)';
 }
 
+function _reagentDisplayGroupBaseName(name){
+  const raw = String(name || '').trim();
+  const loose = (typeof dvNormalizeNameLoose === 'function')
+    ? dvNormalizeNameLoose(raw)
+    : raw.toLowerCase().replace(/[^a-z0-9가-힣]/g,'');
+  if(/^ecod/.test(loose)) return 'ECO-D. 40T. cobas c pack green';
+  if(/^naohd?/.test(loose)) return 'NaOH-D. cobas c pack green';
+  return '';
+}
+function _reagentDisplayGroupKey(reagent){
+  const device = String(reagent && reagent.device || '');
+  const base = _reagentDisplayGroupBaseName(reagent && reagent.name);
+  if(base) return device + '::' + base.toLowerCase();
+  return device + '::id:' + String(reagent && reagent.id || '');
+}
+function _reagentDisplayGroups(dv){
+  const groups = new Map();
+  S.reagents.filter(r=>r.device===dv).forEach(r=>{
+    const key = _reagentDisplayGroupKey(r);
+    if(!groups.has(key)){
+      const baseName = _reagentDisplayGroupBaseName(r.name);
+      groups.set(key, {key, primary:r, ids:[r.id], name:baseName || r.name, storage:r.storage, unit:r.unit});
+    } else {
+      const g = groups.get(key);
+      g.ids.push(r.id);
+      if(!g.storage && r.storage) g.storage = r.storage;
+      if(!g.unit && r.unit) g.unit = r.unit;
+      const baseName = _reagentDisplayGroupBaseName(r.name);
+      if(baseName) g.name = baseName;
+    }
+  });
+  return Array.from(groups.values());
+}
+function _reagentLinkedIds(reagent){
+  if(!reagent) return [];
+  const key = _reagentDisplayGroupKey(reagent);
+  return S.reagents.filter(r=>r.device===reagent.device && _reagentDisplayGroupKey(r)===key).map(r=>r.id);
+}
+
 function renderPills(dv){
   const container=document.getElementById('pills-'+dv);
   if(!container) return;
-  const reagents=S.reagents.filter(r=>r.device===dv);
-  if(!curSelReagent[dv]&&reagents.length) curSelReagent[dv]=reagents[0].id;
+  const groups=_reagentDisplayGroups(dv);
+  if(!curSelReagent[dv]&&groups.length) curSelReagent[dv]=groups[0].primary.id;
+  const selected=S.reagents.find(r=>r.id===curSelReagent[dv]&&r.device===dv);
+  if(selected){
+    const selectedGroup = groups.find(g=>g.key===_reagentDisplayGroupKey(selected));
+    if(selectedGroup && selectedGroup.primary.id !== curSelReagent[dv]) curSelReagent[dv] = selectedGroup.primary.id;
+  }
   const dvColor=getDvAccentColor(dv);
-  let html=reagents.map(r=>{
-    const recs=S.records.filter(x=>x.reagentId===r.id&&x.expiry);
+  let html=groups.map(g=>{
+    const recs=S.records.filter(x=>g.ids.includes(x.reagentId)&&x.expiry);
     const minD=recs.length?Math.min(...recs.map(x=>dU(x.expiry)).filter(x=>x!==null)):null;
     let dot='';
     if(minD!==null){if(minD<=7)dot='var(--red)';else if(minD<=15)dot='var(--yellow)';}
-    const act=curSelReagent[dv]===r.id;
-    return `<div class="rpill${act?' act':''}" onclick="selRgnt('${dv}','${r.id}')" style="${act?`background:${dvColor};border-color:${dvColor};color:#fff`:``};${dv.startsWith('b221')||dv.startsWith('nx10n')?'max-width:none;white-space:normal;':''}">
-      ${dv.startsWith('b221')||dv.startsWith('nx10n')?esc(r.name):esc(r.name.length>13?r.name.slice(0,12)+'…':r.name)}${dot?`<span class="edot" style="background:${dot}"></span>`:''}
+    const act=g.ids.includes(curSelReagent[dv]);
+    const label = String(g.name || '');
+    return `<div class="rpill${act?' act':''}" onclick="selRgnt('${dv}','${g.primary.id}')" style="${act?`background:${dvColor};border-color:${dvColor};color:#fff`:``};${dv.startsWith('b221')||dv.startsWith('nx10n')?'max-width:none;white-space:normal;':''}">
+      ${dv.startsWith('b221')||dv.startsWith('nx10n')?esc(label):esc(label.length>13?label.slice(0,12)+'…':label)}${dot?`<span class="edot" style="background:${dot}"></span>`:''}
     </div>`;
   }).join('');
   html+=`<button class="btn sm rpill-add" onclick="showAddReagent('${dv}')">+ 추가</button>`;
@@ -3585,8 +3635,16 @@ function reagentPackUnitCount(reagent){
 function inboundBoxQty(rec){
   return Math.max(1, parseInt(rec && rec.qty, 10) || 1);
 }
+function _isCalQcDeviceKey(device){
+  const d = String(device || '');
+  return /-cal$/i.test(d);
+}
 function inboundActualQty(rec, reagent){
   return inboundBoxQty(rec) * reagentPackUnitCount(reagent);
+}
+function inboundLedgerQty(rec, reagent){
+  const device = (rec && rec.device) || (reagent && reagent.device) || '';
+  return _isCalQcDeviceKey(device) ? inboundBoxQty(rec) : inboundActualQty(rec, reagent);
 }
 
 function renderLedger(dv){
@@ -3597,15 +3655,17 @@ function renderLedger(dv){
   const selId=curSelReagent[dv];
   const reagents=S.reagents.filter(r=>r.device===dv);
   const reagent=S.reagents.find(r=>r.id===selId&&r.device===dv);
+  const linkedIds = _reagentLinkedIds(reagent);
+  const displayName = _reagentDisplayGroupBaseName(reagent && reagent.name) || (reagent && reagent.name) || '';
 
   if(!reagent||!selId){
     wrap.innerHTML='<div class="empty-state"><div class="empty-ico">📋</div>좌측 탭에서 시약을 선택하거나 추가하세요</div>';
     return;
   }
 
-  const recs=S.records.filter(r=>r.reagentId===selId);
+  const recs=S.records.filter(r=>linkedIds.includes(r.reagentId));
   if(!recs.length){
-    wrap.innerHTML=`<div class="empty-state"><div class="empty-ico">📋</div><div style="font-weight:600">${esc(reagent.name)}</div>등록된 이력이 없습니다<button class="btn sm dbtn-del" style="margin-top:12px" onclick="delReagent('${reagent.id}')">🗑 시약 삭제</button></div>`;
+    wrap.innerHTML=`<div class="empty-state"><div class="empty-ico">📋</div><div style="font-weight:600">${esc(displayName)}</div>등록된 이력이 없습니다<button class="btn sm dbtn-del" style="margin-top:12px" onclick="delReagent('${reagent.id}')">🗑 시약 삭제</button></div>`;
     const addBtn = document.createElement('div');
     addBtn.style.cssText = 'padding:10px 12px;flex-shrink:0;border-top:1px solid var(--border);background:var(--surface);';
     addBtn.innerHTML = `<button data-reagent="${reagent.id}" data-device="${dv}" onclick="quickAddInbound(this.dataset.reagent,this.dataset.device)" style="width:100%;padding:10px;background:var(--s2);border:1px dashed var(--border);border-radius:8px;color:var(--accent);font-size:13px;font-weight:600;cursor:pointer;">＋ 입고 추가</button>`;
@@ -3631,7 +3691,7 @@ function renderLedger(dv){
     const lotRecs = others.filter(r=>r.lot===ib.lot);
     const lg = lotGroups[ib.lot];
     const ibIndex = lg.ibs.indexOf(ib);
-    const ibQty = inboundActualQty(ib, reagent);
+    const ibQty = inboundLedgerQty(ib, reagent);
 
     // ibId로 명시적으로 이 ib에 연결된 것들
     const explicit = lotRecs.filter(r=>r.ibId===ib.id && !lg.claimed.has(r.id));
@@ -3639,7 +3699,8 @@ function renderLedger(dv){
 
     // ibId 없는 것들 중 아직 claim 안된 것 - 순서대로 ibQty만큼 분배
     const unmatched = lotRecs.filter(r=>!r.ibId && !lg.claimed.has(r.id));
-    const toTake = unmatched.slice(0, Math.max(0, ibQty - explicit.length));
+    const takeLimit = _isCalQcDeviceKey(ib.device) ? unmatched.length : Math.max(0, ibQty - explicit.length);
+    const toTake = unmatched.slice(0, takeLimit);
     toTake.forEach(r=>lg.claimed.add(r.id));
 
     const kids = [...explicit, ...toTake];
@@ -3653,7 +3714,7 @@ function renderLedger(dv){
   const show503cols=dv.startsWith('503');  // 503만 main/sub 컬럼
   // 시약명 고정 바
   let html=`<div style="flex-shrink:0;background:var(--surface);padding:10px 16px 6px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
-    <div style="font-size:13px;font-weight:700">${esc(reagent.name)}<span style="font-size:10px;color:var(--tmid);margin-left:8px;font-family:var(--mono)">${reagent.storage||''}</span></div>
+    <div style="font-size:13px;font-weight:700">${esc(displayName)}<span style="font-size:10px;color:var(--tmid);margin-left:8px;font-family:var(--mono)">${reagent.storage||''}</span></div>
   </div>
   <div class="ledger-scroll" style="flex:1;overflow-y:auto;min-height:0;-webkit-overflow-scrolling:touch;">
     <table class="ltable" style="width:100%">
@@ -3681,13 +3742,14 @@ function renderLedger(dv){
 
     // 개봉 행은 slot(행 위치)을 우선 사용해서 고정 배치
     const openKids = kids.filter(k=>k.type!=='폐기');
-    const ibQty = ib?inboundActualQty(ib, reagent):1;
-    const slottedOpenKids = new Array(ibQty).fill(null);
+    const ibQty = ib?inboundLedgerQty(ib, reagent):1;
+    const rowQty = _isCalQcDeviceKey(dv) ? Math.max(ibQty, openKids.length || 0, 1) : ibQty;
+    const slottedOpenKids = new Array(rowQty).fill(null);
     const unslottedOpenKids = [];
 
     openKids.forEach(k=>{
       const slot = parseInt(k.slotIndex,10);
-      if(Number.isInteger(slot) && slot >= 0 && slot < ibQty && !slottedOpenKids[slot]) slottedOpenKids[slot] = k;
+      if(Number.isInteger(slot) && slot >= 0 && slot < rowQty && !slottedOpenKids[slot]) slottedOpenKids[slot] = k;
       else unslottedOpenKids.push(k);
     });
 
@@ -3699,12 +3761,12 @@ function renderLedger(dv){
       return new Date(a.registeredAt||0)-new Date(b.registeredAt||0);
     });
     let fillIdx = 0;
-    for(let si=0; si<ibQty; si++){
+    for(let si=0; si<rowQty; si++){
       if(slottedOpenKids[si]) continue;
       if(fillIdx < unslottedOpenKids.length) slottedOpenKids[si] = unslottedOpenKids[fillIdx++];
     }
 
-    const rowCount = ibQty; // 입고 수량 기준 고정
+    const rowCount = rowQty; // CAL&QC는 박스 수량을 유지하고 이력 행만 필요한 만큼 표시
     const span = rowCount;
 
     const d=ib?dU(ib.expiry):null;
@@ -4192,7 +4254,7 @@ function printLedger(dv){
     const curLot=ib?ib.lot:(kids[0]?kids[0].lot:'');
     const isLotChanged=gi>0 && curLot && groups[gi-1] && curLot!==(groups[gi-1].ib?groups[gi-1].ib.lot:(groups[gi-1].kids[0]?groups[gi-1].kids[0].lot:''));
     const lotClass=isLotChanged?' lot-new-grp':'';
-      const ibQtyPdf = ib?inboundActualQty(ib, reagent):1;
+      const ibQtyPdf = ib?inboundLedgerQty(ib, reagent):1;
       const span=Math.max(kids.length, ibQtyPdf);
       const ibCells=ib
         ?`<td rowspan="${span}">${ib.registeredAt||''}</td><td rowspan="${span}">${ib.lot||''}</td><td rowspan="${span}">${inboundBoxQty(ib)}</td><td rowspan="${span}">${ib.expiry||''}</td>`
@@ -4925,6 +4987,7 @@ function doQuickOpen(reagentId, lot, expiry, device, typeStr, person, ibId, subD
 function quickAddInbound(reagentId, device){
   window._editRecId = null;
   window._qInbound = {reagentId, device};
+  const qtyLabel = _isCalQcDeviceKey(device) ? '수량(박스)' : '수량';
   _makePop(
     `<div style="padding:8px 16px;font-size:11px;color:var(--tdim);border-bottom:1px solid var(--border);">입고 추가</div>`
     +`<div style="padding:10px 12px;display:flex;flex-direction:column;gap:8px;border-bottom:1px solid var(--border);">
@@ -4933,7 +4996,7 @@ function quickAddInbound(reagentId, device){
         <input id="qi-lot" type="text" placeholder="LOT번호" style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:12px;font-family:var(--mono);">
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-size:11px;color:var(--tdim);width:50px;">수량</span>
+        <span style="font-size:11px;color:var(--tdim);width:50px;">${qtyLabel}</span>
         <input id="qi-qty" type="number" min="1" value="1" style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:12px;text-align:center;">
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
@@ -4959,7 +5022,7 @@ function doQuickAddInbound(){
   const date = document.getElementById('qi-date').value||tod();
   _saveUndo();
   S.records.unshift({id:uid(),reagentId,device,type:'입고',
-    lot,qty,expiry:exp,person:'',note:'',
+    lot,qty,qtyUnit:_isCalQcDeviceKey(device)?'box':'',expiry:exp,person:'',note:'',
     registeredAt:date,parallelDone:false,needsParallel:false});
   save(); renderAll(); toast('입고 등록 완료','s');
   closePersonPop();
@@ -6171,6 +6234,13 @@ function dvMatchReagent(invoiceName) {
     return null;
   }
 
+  const displayBase = (typeof _reagentDisplayGroupBaseName === 'function') ? _reagentDisplayGroupBaseName(name) : '';
+  if(displayBase){
+    const displayNorm = dvNormalizeNameLoose(displayBase);
+    const displayMatch = S.reagents.find(r => dvNormalizeNameLoose(_reagentDisplayGroupBaseName(r.name) || r.name) === displayNorm);
+    if(displayMatch) return displayMatch;
+  }
+
   const norm = dvNormalizeName(name);
   const exactNorm = S.reagents.find(r => dvNormalizeName(r.name) === norm);
   if(exactNorm) return exactNorm;
@@ -6978,7 +7048,7 @@ function dvSaveParsed() {
     S.records.unshift({
       id: uid(), reagentId: r.reagent.id, device: r.reagent.device,
       type: '입고', lot: r.lot, qty: r.qty, expiry: r.exp,
-      person, note: '납품서', registeredAt: date,
+      person, note: '납품서', qtyUnit:_isCalQcDeviceKey(r.reagent.device)?'box':'', registeredAt: date,
       parallelDone: false, needsParallel: false
     });
     registered++;
@@ -7164,6 +7234,7 @@ function dvSaveAll(){
     S.records.unshift({
       id:uid(), reagentId:reagent.id, device:reagent.device,
       type:'입고', lot:row.lot||'', qty:row.qty||1,
+      qtyUnit:_isCalQcDeviceKey(reagent.device)?'box':'',
       expiry:row.expiry||'', person, note:'납품서',
       registeredAt:date, parallelDone:false, needsParallel:false
     });
