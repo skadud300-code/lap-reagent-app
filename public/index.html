@@ -1745,6 +1745,8 @@ function openRegularReagentPicker(idx){
   window._fsInitialLoadDone = false;
   window._fsRemoteSeen = false;
   window._fsSaveInFlight = false;
+  window._fsSavePending = false;
+  window._fsManualSaveNotify = false;
   let _db = null;
   let _REF = null;
   const _FS_COLLECTION = 'reagentdata';
@@ -1896,7 +1898,12 @@ function openRegularReagentPicker(idx){
       console.warn('빈 시약 목록으로 Firestore를 덮어쓰지 않도록 저장을 중단했습니다.');
       return false;
     }
-    if(window._fsSaveInFlight) return true;
+    if(window._fsSaveInFlight){
+      window._fsSavePending = true;
+      S._localSavedAt = Date.now();
+      localStorage.setItem('rms4', JSON.stringify(S));
+      return true;
+    }
     if(el){ el.innerHTML = '⏳'; el.style.color='rgba(255,255,255,0.4)'; }
     const savedAt = Date.now();
     window._fsLastSave = savedAt;
@@ -1919,12 +1926,24 @@ function openRegularReagentPicker(idx){
       const t = new Date(savedAt);
       const hm = t.getHours().toString().padStart(2,'0')+':'+t.getMinutes().toString().padStart(2,'0');
       if(el){ el.innerHTML = '🟢 '+hm; el.style.color='rgba(255,255,255,0.7)'; }
+      if(window._fsSavePending){
+        window._fsSavePending = false;
+        window.fs_save();
+      } else {
+        if(window._fsManualSaveNotify && typeof toast === 'function') toast('Firebase 저장 완료','s');
+        window._fsManualSaveNotify = false;
+      }
     }).catch(e => {
       window._fsSaveInFlight = false;
       S._localSavedAt = Date.now();
       localStorage.setItem('rms4', JSON.stringify(S));
       if(el){ el.innerHTML = '🔴'; el.style.color='#f87171'; }
       if(typeof toast === 'function') toast('Firebase 저장 실패: 이 기기에만 임시 저장되었습니다','e');
+      window._fsManualSaveNotify = false;
+      if(window._fsSavePending){
+        window._fsSavePending = false;
+        window.fs_save();
+      }
       console.error('Firestore 저장 실패:', e);
     });
     return true;
@@ -2883,12 +2902,18 @@ const save = ()=>{
 };
 function manualSave(){
   if(!confirm('저장하시겠습니까?\n저장 후에는 되돌리기가 불가합니다.')) return;
+  window._fsManualSaveNotify = true;
   const remoteSaveStarted = window.fs_save ? window.fs_save() : false;
   if(remoteSaveStarted !== false){
     toast('Firebase 저장 중입니다','s');
     return;
   }
-  if(window._fsSaveBlockedReason === 'before_initial_load' || window._fsSaveBlockedReason === 'empty_reagents') return;
+  window._fsManualSaveNotify = false;
+  if(window._fsSaveBlockedReason === 'before_initial_load'){
+    toast('Firebase 로딩 중입니다. 잠시 후 다시 저장해주세요','w');
+    return;
+  }
+  if(window._fsSaveBlockedReason === 'empty_reagents') return;
   localSave();
   toast('Firebase 저장 전이라 이 기기에 임시 저장했습니다','w');
 }
@@ -3080,7 +3105,14 @@ function createParallelLotChangeEvent(ctx){
   return event;
 }
 const esc  = s=> String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-const tod  = ()=> new Date().toISOString().split('T')[0];
+function getLocalTodayString(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+const tod  = ()=> getLocalTodayString();
 const parseLocalDate = s=>{
   if(!s) return null;
   const m = String(s).trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
