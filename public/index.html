@@ -1013,7 +1013,8 @@ body table[data-print-ledger="1"] th:last-child, body table[data-print-ledger="1
 .login-gate{
   position:fixed;inset:0;z-index:5000;
   display:flex;align-items:flex-start;justify-content:center;
-  overflow:auto;padding:28px 16px;
+  overflow-y:auto;overflow-x:hidden;
+  padding:calc(env(safe-area-inset-top, 0px) + 28px) 16px 28px;
   background:
     radial-gradient(circle at 50% -6%,rgba(6,17,31,.13),rgba(255,255,255,0) 36%),
     linear-gradient(180deg,#f8fafc 0%,#ffffff 52%,#f8fafc 100%);
@@ -1032,7 +1033,7 @@ body table[data-print-ledger="1"] th:last-child, body table[data-print-ledger="1
 }
 .login-hero{
   position:relative;
-  padding:42px 30px 24px;
+  padding:72px 30px 44px;
   background:
     linear-gradient(180deg,rgba(6,17,31,.045),rgba(255,255,255,0) 42%),
     #fff;
@@ -1040,18 +1041,25 @@ body table[data-print-ledger="1"] th:last-child, body table[data-print-ledger="1
   border-bottom:1px solid rgba(15,23,42,.08);
 }
 .login-hero::before{
-  content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);
-  width:128px;height:3px;border-radius:0 0 999px 999px;
-  background:#06111f;opacity:.92;
+  content:none !important;
+  display:none !important;
+}
+.login-gate::before,
+.login-gate::after,
+.login-shell::before,
+.login-shell::after,
+.login-hero::after{
+  content:none !important;
+  display:none !important;
 }
 .login-hero-icon{
-  width:216px;height:144px;margin:0 auto 16px;border-radius:0;
+  width:420px;height:auto;margin:0 auto;border-radius:0;
   display:flex;align-items:center;justify-content:center;
   background:transparent;
   box-shadow:none;
-  overflow:hidden;
+  overflow:visible;
 }
-.login-hero-icon img{width:432px;height:288px;max-width:none;object-fit:contain;display:block;filter:contrast(1.18) saturate(1.02);}
+.login-hero-icon img{width:420px;height:auto;max-height:320px;max-width:none;object-fit:contain;display:block;filter:contrast(1.18) saturate(1.02);}
 .login-hero-icon svg{width:46px;height:46px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;opacity:.95;}
 .login-hero-title{font-size:10.5px;font-weight:800;line-height:1.35;letter-spacing:.02em;white-space:normal;color:#6b7280;text-transform:none;}
 .login-hero-sub{font-size:10.5px;line-height:1.58;margin-top:7px;color:#8a93a3;font-weight:700;}
@@ -1153,11 +1161,11 @@ body table[data-print-ledger="1"] th:last-child, body table[data-print-ledger="1
 .admin-empty{padding:16px;border-radius:18px;background:#f6f9ff;color:#7a8698;font-weight:800;text-align:center;border:1px dashed rgba(214,223,236,.95);}
 #more-admin-room-wrap{margin-bottom:10px;}
 @media (max-width:680px){
-  .login-gate{align-items:flex-start;padding:20px 14px 28px;}
+  .login-gate{align-items:flex-start;padding:calc(env(safe-area-inset-top, 0px) + 22px) 14px 28px;}
   .login-shell{width:calc(100vw - 28px);border-radius:28px;}
-  .login-hero{padding:32px 18px 20px;}
-  .login-hero-icon{width:198px;height:132px;border-radius:0;}
-  .login-hero-icon img{width:396px;height:264px;}
+  .login-hero{padding:64px 18px 36px;min-height:auto;}
+  .login-hero-icon{width:340px;height:auto;margin:0 auto;border-radius:0;overflow:visible;}
+  .login-hero-icon img{width:340px;height:auto;max-height:270px;object-fit:contain;display:block;}
   .login-body{padding:20px 16px 22px;}
   .login-main-btn{height:64px;font-size:19px;}
   .login-field input,.login-field select{height:58px;font-size:15px;}
@@ -2019,8 +2027,6 @@ function openRegularReagentPicker(idx){
       <div class="login-hero-icon" aria-hidden="true">
         <img src="iny-symbol.png" alt="INY">
       </div>
-      <div class="login-hero-title">안성성모병원 ReagentAI</div>
-      <div class="login-hero-sub">시약장부 로그인 · 공지사항<br>승인된 직원만 사용</div>
     </div>
     <div class="login-body">
       <div class="login-cap">SECURE ACCESS</div>
