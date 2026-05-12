@@ -2959,6 +2959,12 @@ const uid  = ()=> Date.now()+'-'+Math.random().toString(36).slice(2,6);
 // LOT 개봉/변경 저장 흐름은 유지하고, Parallel 대상 여부와 이벤트 신호만 분리한다.
 function _parallelText(v){ return String(v==null?'':v).trim(); }
 function _parallelLower(v){ return _parallelText(v).toLowerCase(); }
+function getComparableLot(lot){
+  const raw=String(lot||'').trim();
+  const digits=raw.replace(/[^0-9]/g,'');
+  if(digits.length>=6) return digits.slice(0,6);
+  return raw.toUpperCase().replace(/\s+/g,'');
+}
 function _parallelJoin(item, fields){ return fields.map(k=>_parallelText(item&&item[k])).filter(Boolean).join(' '); }
 function _parallelHasAny(text, words){
   const t=_parallelLower(text);
@@ -3061,7 +3067,9 @@ function createParallelLotChangeEvent(ctx){
   const reagent=ctx?.reagent;
   const oldLot=_parallelText(ctx?.oldLot);
   const newLot=_parallelText(ctx?.newLot);
-  if(!reagent || !oldLot || !newLot || oldLot===newLot) return null;
+  const oldLotKey=getComparableLot(oldLot);
+  const newLotKey=getComparableLot(newLot);
+  if(!reagent || !oldLot || !newLot || !oldLotKey || !newLotKey || oldLotKey===newLotKey) return null;
   const eventType=_parallelEventType({...reagent, lotType:ctx?.lotType, type:ctx?.lotType, device:ctx?.device||reagent.device, category:ctx?.category});
   if(!eventType) return null;
   const device=ctx?.device || reagent.device || '';
@@ -3069,7 +3077,7 @@ function createParallelLotChangeEvent(ctx){
   const testCode=_parallelTestCode(reagent);
   const testName=_parallelText(reagent.name || reagent.reagentName || reagent.itemName || testCode);
   const part=_parallelPart(device, reagent);
-  const key=[part,equipmentKey,testCode||testName,oldLot,newLot,eventType].map(_parallelSafeId).join('__');
+  const key=[part,equipmentKey,testCode||testName,oldLotKey,newLotKey,eventType].map(_parallelSafeId).join('__');
   const now=new Date().toISOString();
   const event={
     id:`parallel-event-${key}`,
@@ -3087,6 +3095,8 @@ function createParallelLotChangeEvent(ctx){
     testCode,
     oldLot,
     newLot,
+    oldLotKey,
+    newLotKey,
     previousLot:oldLot,
     currentLot:newLot,
     openedAt:ctx?.openedAt || '',
@@ -3386,7 +3396,7 @@ function doRegister(){
     if(['개봉M','개봉S'].includes(curType)&&it.lot){
       const prev=S.records.filter(r=>r.reagentId===reagent.id&&['개봉M','개봉S'].includes(r.type))
         .sort((a,b)=>new Date(b.registeredAt)-new Date(a.registeredAt))[0];
-      if(prev&&prev.lot&&prev.lot!==it.lot){
+      if(prev&&prev.lot&&getComparableLot(prev.lot)!==getComparableLot(it.lot)){
         const pe=createParallelLotChangeEvent({
           reagent,
           oldLot:prev.lot,
@@ -3789,7 +3799,7 @@ function renderLedger(dv){
     const curLot=ib?ib.lot:(kids[0]?kids[0].lot:'');
     const isLotChanged=gi>0&&(()=>{
       const prev=groups[gi-1];
-      return curLot!==(prev.ib?prev.ib.lot:(prev.kids[0]?prev.kids[0].lot:''));
+      return getComparableLot(curLot)!==getComparableLot(prev.ib?prev.ib.lot:(prev.kids[0]?prev.kids[0].lot:''));
     })();
     const lotClass=isLotChanged?' lot-new-grp':'';
 
@@ -4303,9 +4313,9 @@ function printLedger(dv){
   });
 
   groups.forEach((g,gi)=>{
-      const{ib,kids}=g;
+    const{ib,kids}=g;
     const curLot=ib?ib.lot:(kids[0]?kids[0].lot:'');
-    const isLotChanged=gi>0 && curLot && groups[gi-1] && curLot!==(groups[gi-1].ib?groups[gi-1].ib.lot:(groups[gi-1].kids[0]?groups[gi-1].kids[0].lot:''));
+    const isLotChanged=gi>0 && curLot && groups[gi-1] && getComparableLot(curLot)!==getComparableLot(groups[gi-1].ib?groups[gi-1].ib.lot:(groups[gi-1].kids[0]?groups[gi-1].kids[0].lot:''));
     const lotClass=isLotChanged?' lot-new-grp':'';
       const ibQtyPdf = ib?inboundLedgerQty(ib, reagent):1;
       const span=Math.max(kids.length, ibQtyPdf);
@@ -5008,7 +5018,7 @@ function doQuickOpen(reagentId, lot, expiry, device, typeStr, person, ibId, subD
   const prev = S.records.filter(r=>r.reagentId===reagentId&&['개봉M','개봉S'].includes(r.type))
     .sort((a,b)=>new Date(b.registeredAt)-new Date(a.registeredAt))[0];
   const recordId = uid();
-  if(prev && prev.lot && prev.lot !== lot){
+  if(prev && prev.lot && getComparableLot(prev.lot)!==getComparableLot(lot)){
     const pe=createParallelLotChangeEvent({
       reagent,
       oldLot:prev.lot,
