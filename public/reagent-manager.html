@@ -1779,17 +1779,56 @@ function openRegularReagentPicker(idx){
   }
   function _shouldMergeLocal(data){
     const remoteSavedAt = Number(data && data._savedAt || 0);
-    const localSavedAt = Number(S && S._localSavedAt || 0);
+    const localSavedAt = Number(window.S && window.S._localSavedAt || 0);
     return localSavedAt > remoteSavedAt;
   }
 
+  function _isFirebaseStateReady(){
+    return !!(window.S && window._appStateReadyForFirebase && typeof renderAll === 'function');
+  }
+
+  function _schedulePendingFirebaseFlush(){
+    if(window._fsPendingTimer) return;
+    const startedAt = window._fsPendingStartedAt || Date.now();
+    window._fsPendingStartedAt = startedAt;
+    window._fsPendingTimer = setTimeout(function retryPendingFirebaseData(){
+      window._fsPendingTimer = null;
+      if(!window._fsPendingData) return;
+      if(flushPendingFirebaseData()) return;
+      if(Date.now() - startedAt < 5000) _schedulePendingFirebaseFlush();
+    }, 100);
+  }
+
+  function _queuePendingFirebaseState(data, source){
+    window._fsPendingData = data;
+    window._fsPendingSource = source || '';
+    _schedulePendingFirebaseFlush();
+  }
+
+  function flushPendingFirebaseData(){
+    if(!window._fsPendingData) return true;
+    if(!_isFirebaseStateReady()) return false;
+    const pending = window._fsPendingData;
+    window._fsPendingData = null;
+    if(_applyFirebaseState(pending)){
+      window._fsLastSave = Number(pending._savedAt || 0) || Date.now();
+    }
+    renderAll();
+    window._fsInitialLoadDone = true;
+    return true;
+  }
+
   function _applyFirebaseState(data){
+    if(!_isFirebaseStateReady()){
+      _queuePendingFirebaseState(data, 'apply-before-state-ready');
+      return false;
+    }
     if(!data || !Array.isArray(data.reagents)){
       console.warn('Firestore 데이터에 유효한 reagents 배열이 없어 화면 상태를 바꾸지 않습니다.');
       return false;
     }
     window._fsRemoteSeen = true;
-    const local = S || {};
+    const local = window.S || {};
     const mergeLocal = _shouldMergeLocal(data);
     const remote = {
       reagents: data.reagents,
@@ -1802,22 +1841,22 @@ function openRegularReagentPicker(idx){
       emergencyOrders: Array.isArray(data.emergencyOrders) ? data.emergencyOrders : (local.emergencyOrders || []),
       regularOrders: Array.isArray(data.regularOrders) ? data.regularOrders : (local.regularOrders || [])
     };
-    S.reagents = mergeLocal ? _mergeById(remote.reagents, local.reagents) : remote.reagents;
-    S.records = mergeLocal ? _mergeById(remote.records, local.records) : remote.records;
-    S.notices = mergeLocal ? _mergeById(remote.notices, local.notices) : remote.notices;
-    S.partPersons = remote.partPersons;
-    S.customDevices = mergeLocal ? _mergeById(remote.customDevices, local.customDevices) : remote.customDevices;
-    S.orderVendors = mergeLocal ? _mergeById(remote.orderVendors, local.orderVendors) : remote.orderVendors;
-    S.regularConfigs = mergeLocal ? _mergeById(remote.regularConfigs, local.regularConfigs) : remote.regularConfigs;
-    S.emergencyOrders = mergeLocal ? _mergeById(remote.emergencyOrders, local.emergencyOrders) : remote.emergencyOrders;
-    S.regularOrders = mergeLocal ? _mergeById(remote.regularOrders, local.regularOrders) : remote.regularOrders;
+    local.reagents = mergeLocal ? _mergeById(remote.reagents, local.reagents) : remote.reagents;
+    local.records = mergeLocal ? _mergeById(remote.records, local.records) : remote.records;
+    local.notices = mergeLocal ? _mergeById(remote.notices, local.notices) : remote.notices;
+    local.partPersons = remote.partPersons;
+    local.customDevices = mergeLocal ? _mergeById(remote.customDevices, local.customDevices) : remote.customDevices;
+    local.orderVendors = mergeLocal ? _mergeById(remote.orderVendors, local.orderVendors) : remote.orderVendors;
+    local.regularConfigs = mergeLocal ? _mergeById(remote.regularConfigs, local.regularConfigs) : remote.regularConfigs;
+    local.emergencyOrders = mergeLocal ? _mergeById(remote.emergencyOrders, local.emergencyOrders) : remote.emergencyOrders;
+    local.regularOrders = mergeLocal ? _mergeById(remote.regularOrders, local.regularOrders) : remote.regularOrders;
     window._fsMergedLocalPending = !!(mergeLocal && (
-      !_sameIdSetLen(S.reagents, remote.reagents) ||
-      !_sameIdSetLen(S.records, remote.records) ||
-      !_sameIdSetLen(S.customDevices, remote.customDevices) ||
-      !_sameIdSetLen(S.notices, remote.notices)
+      !_sameIdSetLen(local.reagents, remote.reagents) ||
+      !_sameIdSetLen(local.records, remote.records) ||
+      !_sameIdSetLen(local.customDevices, remote.customDevices) ||
+      !_sameIdSetLen(local.notices, remote.notices)
     ));
-    localStorage.setItem('rms4', JSON.stringify(S));
+    localStorage.setItem('rms4', JSON.stringify(local));
     return true;
   }
 
@@ -1845,6 +1884,10 @@ function openRegularReagentPicker(idx){
       const data = snap.data();
       if(Array.isArray(data.loginUsers) && typeof window.__syncLoginUsersFromFirebase === 'function'){
         window.__syncLoginUsersFromFirebase(data.loginUsers, data._loginUsersSavedAt || data._savedAt || 0, data.loginDeletedUsers || []);
+      }
+      if(!_isFirebaseStateReady()){
+        _queuePendingFirebaseState(data, 'snapshot-before-state-ready');
+        return;
       }
       const remoteSavedAt = Number(data._savedAt || 0);
       if(!window._fsInitialLoadDone || !window._fsLastSave || remoteSavedAt > window._fsLastSave) {
@@ -2856,6 +2899,7 @@ let S = (()=>{
 if(!Array.isArray(S.notices)) S.notices = [];
 if(!S.customDevices) S.customDevices = [];
 if(!S.partPersons) S.partPersons = {};
+window.S = S;
 const DEVS = ['503-주시약','503-소모','503-cal','e801-주시약','e801-소모','e801-cal','b221-주시약','b221-소모','b221-cal','nx10n-주시약','nx10n-소모','nx10n-cal'];
 const DV503  = ['503-주시약','503-소모','503-cal'];
 const DVe801 = ['e801-주시약','e801-소모','e801-cal'];
@@ -3424,6 +3468,8 @@ function renderAll(){
   _allDeviceKeys().forEach(dv=>{ renderPills(dv); renderLedger(dv); });
   updateStats();
 }
+window._appStateReadyForFirebase = true;
+if(typeof flushPendingFirebaseData === 'function') flushPendingFirebaseData();
 
 
 function _toggleReagentSearchClear(pageKey){
