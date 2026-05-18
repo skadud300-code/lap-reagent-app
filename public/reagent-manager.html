@@ -1743,8 +1743,17 @@ function openRegularReagentPicker(idx){
 <script>
   window._firebaseReady = !!(window.firebase && firebase.initializeApp && firebase.firestore);
   window._fsInitialLoadDone = false;
+  window._fsInitialLoading = !!window._firebaseReady;
+  window._fsInitialLoaded = false;
+  window._fsInitialLoadFailed = false;
+  window._fsInitialLoadFinished = false;
   window._fsRemoteSeen = false;
   window._fsSaveInFlight = false;
+  window._fsSavePending = false;
+  window._fsManualSaveNotify = false;
+  window._localDirtyBeforeInitialLoad = false;
+  window._fsSkipRemoteApplyUntilCloudSave = false;
+  window._lastSaveStatus = '';
   let _db = null;
   let _REF = null;
   const _FS_COLLECTION = 'reagentdata';
@@ -1787,6 +1796,29 @@ function openRegularReagentPicker(idx){
     return !!(window.S && window._appStateReadyForFirebase && typeof renderAll === 'function');
   }
 
+  function _sanitizeForFirestore(value, seen){
+    if(value === undefined || typeof value === 'function') return undefined;
+    if(typeof value === 'number' && !Number.isFinite(value)) return null;
+    if(value === null || typeof value !== 'object') return value;
+    if(value instanceof Date) return value;
+    seen = seen || new WeakSet();
+    if(seen.has(value)) return null;
+    seen.add(value);
+    if(Array.isArray(value)){
+      return value.map(function(item){
+        const clean = _sanitizeForFirestore(item, seen);
+        return clean === undefined ? null : clean;
+      });
+    }
+    const out = {};
+    Object.keys(value).forEach(function(key){
+      const clean = _sanitizeForFirestore(value[key], seen);
+      if(clean !== undefined) out[key] = clean;
+    });
+    seen.delete(value);
+    return out;
+  }
+
   function _schedulePendingFirebaseFlush(){
     if(window._fsPendingTimer) return;
     const startedAt = window._fsPendingStartedAt || Date.now();
@@ -1814,7 +1846,7 @@ function openRegularReagentPicker(idx){
       window._fsLastSave = Number(pending._savedAt || 0) || Date.now();
     }
     renderAll();
-    window._fsInitialLoadDone = true;
+    _finishFsInitialLoad(true);
     return true;
   }
 
@@ -1825,6 +1857,13 @@ function openRegularReagentPicker(idx){
     }
     if(!data || !Array.isArray(data.reagents)){
       console.warn('Firestore 데이터에 유효한 reagents 배열이 없어 화면 상태를 바꾸지 않습니다.');
+      return false;
+    }
+    if(window._localDirtyBeforeInitialLoad || window._fsSkipRemoteApplyUntilCloudSave){
+      window._fsRemoteSeen = true;
+      window._fsSkipRemoteApplyUntilCloudSave = true;
+      console.warn('[Firebase] 초기 로딩 중 로컬 변경이 있어 remote snapshot 적용을 보류했습니다.');
+      if(typeof toast === 'function') toast('로컬 임시저장 유지 — 클라우드 동기화 대기 중','w');
       return false;
     }
     window._fsRemoteSeen = true;
@@ -1859,6 +1898,57 @@ function openRegularReagentPicker(idx){
     localStorage.setItem('rms4', JSON.stringify(local));
     return true;
   }
+  function _finishFsInitialLoad(success){
+    window._fsInitialLoading = false;
+    window._fsInitialLoadFinished = true;
+    window._fsInitialLoadDone = true;
+    window._fsInitialLoaded = !!success;
+    window._fsInitialLoadFailed = !success;
+  }
+  function _handleFirebaseSnapshot(snap, source){
+    const el = document.getElementById('fs-status');
+    if(!snap.exists){
+      _finishFsInitialLoad(true);
+      if(el){ el.innerHTML = '🟡'; el.style.color='#fbbf24'; }
+      console.info('[Firebase] reagentdata/shared load finished: empty document', source || '');
+      return;
+    }
+    const data = snap.data();
+    if(Array.isArray(data.loginUsers) && typeof window.__syncLoginUsersFromFirebase === 'function'){
+      window.__syncLoginUsersFromFirebase(data.loginUsers, data._loginUsersSavedAt || data._savedAt || 0, data.loginDeletedUsers || []);
+    }
+    if(!_isFirebaseStateReady()){
+      _queuePendingFirebaseState(data, source || 'snapshot-before-state-ready');
+      return;
+    }
+    const remoteSavedAt = Number(data._savedAt || 0);
+    if(!window._fsInitialLoaded || !window._fsLastSave || remoteSavedAt > window._fsLastSave) {
+      if(_applyFirebaseState(data)){
+        window._fsLastSave = remoteSavedAt || Date.now();
+      }
+      if(typeof renderAll === 'function') renderAll();
+    }
+    _finishFsInitialLoad(true);
+    if(window._fsSkipRemoteApplyUntilCloudSave){
+      if(el){ el.innerHTML = '🟡 로컬'; el.style.color='#fbbf24'; }
+      console.info('[Firebase] remote snapshot 적용 보류: 로컬 변경 수동 저장 대기', source || '');
+      return;
+    }
+    if(window._fsMergedLocalPending && typeof window.fs_save === 'function'){
+      window._fsMergedLocalPending = false;
+      window.fs_save();
+    }
+    const t = new Date(data._savedAt||Date.now());
+    const hm = t.getHours().toString().padStart(2,'0')+':'+t.getMinutes().toString().padStart(2,'0');
+    if(el){ el.innerHTML = '🟢 '+hm; el.style.color='rgba(255,255,255,0.7)'; }
+    console.info('[Firebase] reagentdata/shared load finished', source || '');
+  }
+  function _handleFirebaseInitialLoadFailure(err){
+    _finishFsInitialLoad(false);
+    const el = document.getElementById('fs-status');
+    if(el){ el.innerHTML = '🔴'; el.style.color='#f87171'; }
+    console.error('[Firebase] reagentdata/shared initial load failed:', err);
+  }
 
   if(window._firebaseReady){
     firebase.initializeApp({
@@ -1874,43 +1964,29 @@ function openRegularReagentPicker(idx){
     window._db = _db;
     window._REF = _REF;
 
+    setTimeout(function(){
+      if(window._fsInitialLoading){
+        _handleFirebaseInitialLoadFailure(new Error('Firebase initial load timeout'));
+      }
+    }, 5000);
+
+    _REF.get().then((snap) => {
+      _handleFirebaseSnapshot(snap, 'initial-get');
+    }).catch((err) => {
+      _handleFirebaseInitialLoadFailure(err);
+    }).finally(() => {
+      if(window._fsInitialLoading){
+        _handleFirebaseInitialLoadFailure(new Error('Firebase initial load finished without snapshot state'));
+      }
+    });
+
     _REF.onSnapshot((snap) => {
-      const el = document.getElementById('fs-status');
-      if(!snap.exists){
-        window._fsInitialLoadDone = true;
-        if(el){ el.innerHTML = '🟡'; el.style.color='#fbbf24'; }
-        return;
-      }
-      const data = snap.data();
-      if(Array.isArray(data.loginUsers) && typeof window.__syncLoginUsersFromFirebase === 'function'){
-        window.__syncLoginUsersFromFirebase(data.loginUsers, data._loginUsersSavedAt || data._savedAt || 0, data.loginDeletedUsers || []);
-      }
-      if(!_isFirebaseStateReady()){
-        _queuePendingFirebaseState(data, 'snapshot-before-state-ready');
-        return;
-      }
-      const remoteSavedAt = Number(data._savedAt || 0);
-      if(!window._fsInitialLoadDone || !window._fsLastSave || remoteSavedAt > window._fsLastSave) {
-        if(_applyFirebaseState(data)){
-          window._fsLastSave = remoteSavedAt || Date.now();
-        }
-        if(typeof renderAll === 'function') renderAll();
-      }
-      window._fsInitialLoadDone = true;
-      if(window._fsMergedLocalPending && typeof window.fs_save === 'function'){
-        window._fsMergedLocalPending = false;
-        window.fs_save();
-      }
-      const t = new Date(data._savedAt||Date.now());
-      const hm = t.getHours().toString().padStart(2,'0')+':'+t.getMinutes().toString().padStart(2,'0');
-      if(el){ el.innerHTML = '🟢 '+hm; el.style.color='rgba(255,255,255,0.7)'; }
+      _handleFirebaseSnapshot(snap, 'snapshot');
     }, (err) => {
-      window._fsInitialLoadDone = true;
-      const el = document.getElementById('fs-status');
-      if(el){ el.innerHTML = '🔴'; el.style.color='#f87171'; }
-      console.error(err);
+      _handleFirebaseInitialLoadFailure(err);
     });
   } else {
+    _finishFsInitialLoad(false);
     document.addEventListener('DOMContentLoaded', function(){
       const el = document.getElementById('fs-status');
       if(el){ el.innerHTML = '로컬'; el.style.color='rgba(255,255,255,0.7)'; }
@@ -1926,11 +2002,21 @@ function openRegularReagentPicker(idx){
       if(el){ el.innerHTML = '로컬'; el.style.color='rgba(255,255,255,0.7)'; }
       return false;
     }
-    if(!window._fsInitialLoadDone){
+    if(window._fsInitialLoading){
       window._fsSaveBlockedReason = 'before_initial_load';
       if(el){ el.innerHTML = '⏳'; el.style.color='rgba(255,255,255,0.4)'; }
       console.warn('[save blocked] Firebase initial load is not complete');
       return false;
+    }
+    if(window._fsInitialLoadFailed){
+      if(window._localDirtyBeforeInitialLoad){
+        console.warn('[save retry] Firebase initial load failed, but local dirty data exists. Trying cloud save.');
+      } else {
+        window._fsSaveBlockedReason = 'initial_load_failed';
+        if(el){ el.innerHTML = '🔴'; el.style.color='#f87171'; }
+        console.warn('[save blocked] Firebase initial load failed. Retry refresh before saving.');
+        return false;
+      }
     }
     if(window._fsRemoteSeen && (!Array.isArray(S.reagents) || S.reagents.length === 0)){
       window._fsSaveBlockedReason = 'empty_reagents';
@@ -1939,12 +2025,17 @@ function openRegularReagentPicker(idx){
       console.warn('빈 시약 목록으로 Firestore를 덮어쓰지 않도록 저장을 중단했습니다.');
       return false;
     }
-    if(window._fsSaveInFlight) return true;
+    if(window._fsSaveInFlight){
+      window._fsSavePending = true;
+      S._localSavedAt = Date.now();
+      localStorage.setItem('rms4', JSON.stringify(S));
+      return true;
+    }
     if(el){ el.innerHTML = '⏳'; el.style.color='rgba(255,255,255,0.4)'; }
     const savedAt = Date.now();
     window._fsLastSave = savedAt;
     window._fsSaveInFlight = true;
-    _REF.set({
+    const payload = _sanitizeForFirestore({
       reagents: S.reagents,
       records: S.records,
       notices: S.notices || [],
@@ -1955,19 +2046,36 @@ function openRegularReagentPicker(idx){
       emergencyOrders: S.emergencyOrders || [],
       regularOrders: S.regularOrders || [],
       _savedAt: savedAt
-    }, { merge: true }).then(() => {
+    });
+    _REF.set(payload, { merge: true }).then(() => {
       window._fsSaveInFlight = false;
+      window._localDirtyBeforeInitialLoad = false;
+      window._fsSkipRemoteApplyUntilCloudSave = false;
+      window._lastSaveStatus = 'cloud_saved';
       S._localSavedAt = savedAt;
       localStorage.setItem('rms4', JSON.stringify(S));
       const t = new Date(savedAt);
       const hm = t.getHours().toString().padStart(2,'0')+':'+t.getMinutes().toString().padStart(2,'0');
       if(el){ el.innerHTML = '🟢 '+hm; el.style.color='rgba(255,255,255,0.7)'; }
+      if(window._fsSavePending){
+        window._fsSavePending = false;
+        window.fs_save();
+      } else {
+        if(window._fsManualSaveNotify && typeof toast === 'function') toast('Firebase 저장 완료','s');
+        window._fsManualSaveNotify = false;
+      }
     }).catch(e => {
       window._fsSaveInFlight = false;
+      window._lastSaveStatus = 'local_saved_cloud_failed';
       S._localSavedAt = Date.now();
       localStorage.setItem('rms4', JSON.stringify(S));
       if(el){ el.innerHTML = '🔴'; el.style.color='#f87171'; }
       if(typeof toast === 'function') toast('Firebase 저장 실패: 이 기기에만 임시 저장되었습니다','e');
+      window._fsManualSaveNotify = false;
+      if(window._fsSavePending){
+        window._fsSavePending = false;
+        window.fs_save();
+      }
       console.error('Firestore 저장 실패:', e);
     });
     return true;
@@ -2068,7 +2176,7 @@ function openRegularReagentPicker(idx){
   <div class="login-shell">
     <div class="login-hero">
       <div class="login-hero-icon" aria-hidden="true">
-        <img src="iny-symbol.png" alt="INY">
+        <img src="assets/iny-symbol.png?v=20260511-2155" alt="INY">
       </div>
     </div>
     <div class="login-body">
@@ -2194,7 +2302,7 @@ function openRegularReagentPicker(idx){
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
             <div id="hero-hospital-chip" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:18px;background:rgba(255,255,255,0.72);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 12px 30px rgba(15,23,42,0.10), inset 0 0 0 1px rgba(255,255,255,0.58);">
               <span style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:0 0 36px;">
-                <img id="hero-iny-symbol" src="iny-symbol.png" alt="INY" style="width:180px;height:120px;object-fit:contain;display:block;max-width:none;">
+                <img id="hero-iny-symbol" src="assets/iny-symbol.png?v=20260511-2155" alt="INY" style="width:180px;height:120px;object-fit:contain;display:block;max-width:none;">
               </span>
               <div>
                 <div id="hero-hospital-name" style="font-size:16px;font-weight:900;letter-spacing:-0.5px;color:#14213d;">안성성모병원 ReagentAI</div>
@@ -2915,24 +3023,67 @@ let pendPar=null;
 // localSave: Firebase 실패/빠른 로딩 백업, save: Firestore 원본 저장 우선
 const localSave = ()=>{
   S._localSavedAt = Date.now();
+  if(window._fsInitialLoading || !window._fsInitialLoadDone){
+    window._localDirtyBeforeInitialLoad = true;
+    window._fsSkipRemoteApplyUntilCloudSave = true;
+  }
   localStorage.setItem('rms4', JSON.stringify(S));
+  console.info('[save] localStorage saved', {
+    reason: window._fsSaveBlockedReason || '',
+    dirtyBeforeInitialLoad: !!window._localDirtyBeforeInitialLoad
+  });
 };
 const save = ()=>{
   if(window.fs_save){
     const started = window.fs_save();
-    if(started !== false) return;
-    if(window._fsSaveBlockedReason === 'before_initial_load' || window._fsSaveBlockedReason === 'empty_reagents') return;
+    if(started !== false){
+      localSave();
+      window._lastSaveStatus = 'local_saved_pending_cloud';
+      return 'local_saved_pending_cloud';
+    }
+    if(window._fsSaveBlockedReason === 'before_initial_load'){
+      localSave();
+      window._lastSaveStatus = 'local_saved_pending_cloud';
+      if(typeof toast === 'function') toast('로컬 임시저장 완료 — 클라우드 동기화 대기 중','w');
+      return 'local_saved_pending_cloud';
+    }
+    if(window._fsSaveBlockedReason === 'empty_reagents'){
+      window._lastSaveStatus = 'save_failed';
+      return 'save_failed';
+    }
+    if(window._fsSaveBlockedReason === 'initial_load_failed'){
+      localSave();
+      window._lastSaveStatus = 'local_saved_cloud_failed';
+      return 'local_saved_cloud_failed';
+    }
   }
   localSave();
+  window._lastSaveStatus = 'local_saved_pending_cloud';
+  return 'local_saved_pending_cloud';
 };
 function manualSave(){
   if(!confirm('저장하시겠습니까?\n저장 후에는 되돌리기가 불가합니다.')) return;
+  window._fsManualSaveNotify = true;
   const remoteSaveStarted = window.fs_save ? window.fs_save() : false;
   if(remoteSaveStarted !== false){
+    localSave();
+    window._lastSaveStatus = 'local_saved_pending_cloud';
     toast('Firebase 저장 중입니다','s');
     return;
   }
-  if(window._fsSaveBlockedReason === 'before_initial_load' || window._fsSaveBlockedReason === 'empty_reagents') return;
+  window._fsManualSaveNotify = false;
+  if(window._fsSaveBlockedReason === 'before_initial_load'){
+    localSave();
+    window._lastSaveStatus = 'local_saved_pending_cloud';
+    toast('로컬 임시저장 완료 — 클라우드 동기화 대기 중','w');
+    return;
+  }
+  if(window._fsSaveBlockedReason === 'initial_load_failed'){
+    localSave();
+    toast('Firebase 연결 실패: 이 기기에 임시 저장했습니다. 새로고침으로 다시 시도해주세요','e');
+    return;
+  }
+  if(window._fsSaveBlockedReason === 'empty_reagents') return;
   localSave();
   toast('Firebase 저장 전이라 이 기기에 임시 저장했습니다','w');
 }
@@ -2957,14 +3108,16 @@ function refreshApp(){
             localSave();
           }
           if(data._savedAt) window._fsLastSave = data._savedAt;
-          window._fsInitialLoadDone = true;
+          if(typeof _finishFsInitialLoad === 'function') _finishFsInitialLoad(true);
+          else window._fsInitialLoadDone = true;
         }
         renderAll();
         toast('새로고침 완료','s');
       }).catch(function(e){
         console.warn(e);
+        if(typeof _handleFirebaseInitialLoadFailure === 'function') _handleFirebaseInitialLoadFailure(e);
         renderAll();
-        toast('화면 새로고침 완료','s');
+        toast('Firebase 연결 실패: 화면만 새로고침했습니다','e');
       });
       return;
     }
@@ -2978,6 +3131,12 @@ const uid  = ()=> Date.now()+'-'+Math.random().toString(36).slice(2,6);
 // LOT 개봉/변경 저장 흐름은 유지하고, Parallel 대상 여부와 이벤트 신호만 분리한다.
 function _parallelText(v){ return String(v==null?'':v).trim(); }
 function _parallelLower(v){ return _parallelText(v).toLowerCase(); }
+function getComparableLot(lot){
+  const raw=String(lot||'').trim();
+  const digits=raw.replace(/[^0-9]/g,'');
+  if(digits.length>=6) return digits.slice(0,6);
+  return raw.toUpperCase().replace(/\s+/g,'');
+}
 function _parallelJoin(item, fields){ return fields.map(k=>_parallelText(item&&item[k])).filter(Boolean).join(' '); }
 function _parallelHasAny(text, words){
   const t=_parallelLower(text);
@@ -3080,7 +3239,9 @@ function createParallelLotChangeEvent(ctx){
   const reagent=ctx?.reagent;
   const oldLot=_parallelText(ctx?.oldLot);
   const newLot=_parallelText(ctx?.newLot);
-  if(!reagent || !oldLot || !newLot || oldLot===newLot) return null;
+  const oldLotKey=getComparableLot(oldLot);
+  const newLotKey=getComparableLot(newLot);
+  if(!reagent || !oldLot || !newLot || !oldLotKey || !newLotKey || oldLotKey===newLotKey) return null;
   const eventType=_parallelEventType({...reagent, lotType:ctx?.lotType, type:ctx?.lotType, device:ctx?.device||reagent.device, category:ctx?.category});
   if(!eventType) return null;
   const device=ctx?.device || reagent.device || '';
@@ -3088,7 +3249,7 @@ function createParallelLotChangeEvent(ctx){
   const testCode=_parallelTestCode(reagent);
   const testName=_parallelText(reagent.name || reagent.reagentName || reagent.itemName || testCode);
   const part=_parallelPart(device, reagent);
-  const key=[part,equipmentKey,testCode||testName,oldLot,newLot,eventType].map(_parallelSafeId).join('__');
+  const key=[part,equipmentKey,testCode||testName,oldLotKey,newLotKey,eventType].map(_parallelSafeId).join('__');
   const now=new Date().toISOString();
   const event={
     id:`parallel-event-${key}`,
@@ -3106,6 +3267,8 @@ function createParallelLotChangeEvent(ctx){
     testCode,
     oldLot,
     newLot,
+    oldLotKey,
+    newLotKey,
     previousLot:oldLot,
     currentLot:newLot,
     openedAt:ctx?.openedAt || '',
@@ -3124,7 +3287,14 @@ function createParallelLotChangeEvent(ctx){
   return event;
 }
 const esc  = s=> String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-const tod  = ()=> new Date().toISOString().split('T')[0];
+function getLocalTodayString(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+const tod  = ()=> getLocalTodayString();
 const parseLocalDate = s=>{
   if(!s) return null;
   const m = String(s).trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -3398,7 +3568,7 @@ function doRegister(){
     if(['개봉M','개봉S'].includes(curType)&&it.lot){
       const prev=S.records.filter(r=>r.reagentId===reagent.id&&['개봉M','개봉S'].includes(r.type))
         .sort((a,b)=>new Date(b.registeredAt)-new Date(a.registeredAt))[0];
-      if(prev&&prev.lot&&prev.lot!==it.lot){
+      if(prev&&prev.lot&&getComparableLot(prev.lot)!==getComparableLot(it.lot)){
         const pe=createParallelLotChangeEvent({
           reagent,
           oldLot:prev.lot,
@@ -3803,7 +3973,7 @@ function renderLedger(dv){
     const curLot=ib?ib.lot:(kids[0]?kids[0].lot:'');
     const isLotChanged=gi>0&&(()=>{
       const prev=groups[gi-1];
-      return curLot!==(prev.ib?prev.ib.lot:(prev.kids[0]?prev.kids[0].lot:''));
+      return getComparableLot(curLot)!==getComparableLot(prev.ib?prev.ib.lot:(prev.kids[0]?prev.kids[0].lot:''));
     })();
     const lotClass=isLotChanged?' lot-new-grp':'';
 
@@ -4317,9 +4487,9 @@ function printLedger(dv){
   });
 
   groups.forEach((g,gi)=>{
-      const{ib,kids}=g;
+    const{ib,kids}=g;
     const curLot=ib?ib.lot:(kids[0]?kids[0].lot:'');
-    const isLotChanged=gi>0 && curLot && groups[gi-1] && curLot!==(groups[gi-1].ib?groups[gi-1].ib.lot:(groups[gi-1].kids[0]?groups[gi-1].kids[0].lot:''));
+    const isLotChanged=gi>0 && curLot && groups[gi-1] && getComparableLot(curLot)!==getComparableLot(groups[gi-1].ib?groups[gi-1].ib.lot:(groups[gi-1].kids[0]?groups[gi-1].kids[0].lot:''));
     const lotClass=isLotChanged?' lot-new-grp':'';
       const ibQtyPdf = ib?inboundLedgerQty(ib, reagent):1;
       const span=Math.max(kids.length, ibQtyPdf);
@@ -5022,7 +5192,7 @@ function doQuickOpen(reagentId, lot, expiry, device, typeStr, person, ibId, subD
   const prev = S.records.filter(r=>r.reagentId===reagentId&&['개봉M','개봉S'].includes(r.type))
     .sort((a,b)=>new Date(b.registeredAt)-new Date(a.registeredAt))[0];
   const recordId = uid();
-  if(prev && prev.lot && prev.lot !== lot){
+  if(prev && prev.lot && getComparableLot(prev.lot)!==getComparableLot(lot)){
     const pe=createParallelLotChangeEvent({
       reagent,
       oldLot:prev.lot,
@@ -5334,7 +5504,7 @@ function renderOrder(){
 
 
 
-let emergencyDraft = { device:'', vendorId:'', requester:'', note:'', items:[{name:'', lot:'', qty:''}] };
+let emergencyDraft = { partId:'', device:'', vendorId:'', requester:'', note:'', items:[{name:'', lot:'', qty:''}] };
 
 function getCurrentOrderContext(){
   if(_currentPart){
@@ -5365,8 +5535,48 @@ function getCurrentOrderContext(){
     activeDevice:currentPg
   };
 }
+function getOrderPartOptions(){
+  const partNames = {chem:'화학', immuno:'면역', hema:'혈액', urine:'소변', bloodbank:'혈액은행', molecular:'분자'};
+  const keys = ['chem'].concat(Object.keys(PARTS||{}));
+  (S.customDevices||[]).forEach(d => {
+    const partId = String(d.partId||'').trim();
+    if(partId && !keys.includes(partId)) keys.push(partId);
+  });
+  return keys.map(partId => ({
+    value:partId,
+    label:partNames[partId] || (PARTS[partId] && PARTS[partId].name) || partId
+  }));
+}
+function getOrderDevicesForPart(partId){
+  if(partId === 'chem'){
+    return [
+      { value:'503', label:'c503' },
+      { value:'e801', label:'e801' },
+      { value:'b221', label:'b221' },
+      { value:'nx10n', label:'NX10N' }
+    ];
+  }
+  return (S.customDevices||[])
+    .filter(d => d.partId === partId)
+    .map(d => ({ value:d.id, label:d.name || d.id }));
+}
+function getEmergencyOrderContext(){
+  const current = getCurrentOrderContext();
+  const partOptions = getOrderPartOptions();
+  let partId = emergencyDraft.partId || current.partId || 'chem';
+  if(!partOptions.some(p => p.value === partId)) partId = current.partId || (partOptions[0] ? partOptions[0].value : 'chem');
+  const devices = getOrderDevicesForPart(partId);
+  const activeDevice = partId === current.partId ? current.activeDevice : '';
+  return {
+    partId,
+    partName:(partOptions.find(p => p.value === partId) || {}).label || '파트',
+    partOptions,
+    devices,
+    activeDevice
+  };
+}
 function getPartDevicesForOrder(){
-  return getCurrentOrderContext().devices || [];
+  return getEmergencyOrderContext().devices || [];
 }
 function getCurrentPartName(){
   return getCurrentOrderContext().partName || '파트';
@@ -5375,7 +5585,10 @@ function getSelectedVendor(){
   return (S.orderVendors||[]).find(v => v.id === emergencyDraft.vendorId) || {name:'', email:'', cc:''};
 }
 function ensureEmergencyDefaults(){
-  const ctx = getCurrentOrderContext();
+  const current = getCurrentOrderContext();
+  if(!emergencyDraft.partId) emergencyDraft.partId = current.partId || 'chem';
+  const ctx = getEmergencyOrderContext();
+  emergencyDraft.partId = ctx.partId;
   const devices = ctx.devices || [];
   if(!emergencyDraft.device || !devices.some(d => d.value === emergencyDraft.device)){
     emergencyDraft.device = ctx.activeDevice || (devices[0] ? devices[0].value : '');
@@ -5385,10 +5598,16 @@ function ensureEmergencyDefaults(){
   if(!Array.isArray(emergencyDraft.items) || !emergencyDraft.items.length) emergencyDraft.items = [{name:'', lot:'', qty:''}];
 }
 function updateEmergencyField(key, value){ emergencyDraft[key] = value; }
+function updateEmergencyPart(partId){
+  emergencyDraft.partId = partId || 'chem';
+  emergencyDraft.device = '';
+  ensureEmergencyDefaults();
+  openEmergencyQuick();
+}
 function updateEmergencyItem(idx, key, value){ if(!emergencyDraft.items[idx]) return; emergencyDraft.items[idx][key] = value; }
 function clearEmergencyDraft(keepVendor){
   const currentVendorId = keepVendor ? (emergencyDraft.vendorId || '') : '';
-  emergencyDraft = { device:'', vendorId:currentVendorId, requester:'', note:'', items:[{name:'', lot:'', qty:''}] };
+  emergencyDraft = { partId:'', device:'', vendorId:currentVendorId, requester:'', note:'', items:[{name:'', lot:'', qty:''}] };
   ensureEmergencyDefaults();
 }
 function addEmergencyItem(){ emergencyDraft.items.push({name:'', lot:'', qty:''}); openEmergencyQuick(); }
@@ -5403,7 +5622,7 @@ function buildEmergencyOrderPayload(){
     lot:String(it.lot||'').trim(),
     qty:String(it.qty||'').trim()
   })).filter(it => it.name || it.lot || it.qty);
-  const ctx = getCurrentOrderContext();
+  const ctx = getEmergencyOrderContext();
   return {
     savedAt: new Date().toISOString(),
     partId: ctx.partId,
@@ -5501,8 +5720,12 @@ function emailEmergencyOrder(){
 }
 function openEmergencyQuick(){
   ensureEmergencyDefaults();
-  const ctx = getCurrentOrderContext();
+  const ctx = getEmergencyOrderContext();
   const devices = ctx.devices || [];
+  const partOpts = (ctx.partOptions || []).map(p => `<option value="${esc(p.value)}" ${p.value===ctx.partId?'selected':''}>${esc(p.label)}</option>`).join('');
+  const deviceOpts = devices.length
+    ? devices.map(d=>`<option value="${esc(d.value)}" ${d.value===emergencyDraft.device?'selected':''}>${esc(d.label)}</option>`).join('')
+    : '<option value="">등록된 장비 없음</option>';
   const vendors = S.orderVendors || [];
   const vendorOpts = vendors.length
     ? vendors.map(v => `<option value="${esc(v.id)}" ${v.id===emergencyDraft.vendorId?'selected':''}>${esc(v.name||v.email||'업체')}</option>`).join('')
@@ -5534,12 +5757,12 @@ function openEmergencyQuick(){
       <div class="order-sheet-sub">현재 들어와 있는 <b>${esc(partName)}</b> 파트를 자동 적용했습니다.</div>
       <div class="order-sheet-field" style="margin-top:12px;">
         <label>현재 파트</label>
-        <input value="${esc(partName)}" readonly>
+        <select onchange="updateEmergencyPart(this.value)">${partOpts}</select>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
         <div class="order-sheet-field">
           <label>장비</label>
-          <select onchange="updateEmergencyField('device',this.value)">${devices.map(d=>`<option value="${esc(d.value)}" ${d.value===emergencyDraft.device?'selected':''}>${esc(d.label)}</option>`).join('')}</select>
+          <select onchange="updateEmergencyField('device',this.value)">${deviceOpts}</select>
         </div>
         <div class="order-sheet-field">
           <label>업체</label>

@@ -1751,6 +1751,9 @@ function openRegularReagentPicker(idx){
   window._fsSaveInFlight = false;
   window._fsSavePending = false;
   window._fsManualSaveNotify = false;
+  window._localDirtyBeforeInitialLoad = false;
+  window._fsSkipRemoteApplyUntilCloudSave = false;
+  window._lastSaveStatus = '';
   let _db = null;
   let _REF = null;
   const _FS_COLLECTION = 'reagentdata';
@@ -1785,17 +1788,86 @@ function openRegularReagentPicker(idx){
   }
   function _shouldMergeLocal(data){
     const remoteSavedAt = Number(data && data._savedAt || 0);
-    const localSavedAt = Number(S && S._localSavedAt || 0);
+    const localSavedAt = Number(window.S && window.S._localSavedAt || 0);
     return localSavedAt > remoteSavedAt;
   }
 
+  function _isFirebaseStateReady(){
+    return !!(window.S && window._appStateReadyForFirebase && typeof renderAll === 'function');
+  }
+
+  function _sanitizeForFirestore(value, seen){
+    if(value === undefined || typeof value === 'function') return undefined;
+    if(typeof value === 'number' && !Number.isFinite(value)) return null;
+    if(value === null || typeof value !== 'object') return value;
+    if(value instanceof Date) return value;
+    seen = seen || new WeakSet();
+    if(seen.has(value)) return null;
+    seen.add(value);
+    if(Array.isArray(value)){
+      return value.map(function(item){
+        const clean = _sanitizeForFirestore(item, seen);
+        return clean === undefined ? null : clean;
+      });
+    }
+    const out = {};
+    Object.keys(value).forEach(function(key){
+      const clean = _sanitizeForFirestore(value[key], seen);
+      if(clean !== undefined) out[key] = clean;
+    });
+    seen.delete(value);
+    return out;
+  }
+
+  function _schedulePendingFirebaseFlush(){
+    if(window._fsPendingTimer) return;
+    const startedAt = window._fsPendingStartedAt || Date.now();
+    window._fsPendingStartedAt = startedAt;
+    window._fsPendingTimer = setTimeout(function retryPendingFirebaseData(){
+      window._fsPendingTimer = null;
+      if(!window._fsPendingData) return;
+      if(flushPendingFirebaseData()) return;
+      if(Date.now() - startedAt < 5000) _schedulePendingFirebaseFlush();
+    }, 100);
+  }
+
+  function _queuePendingFirebaseState(data, source){
+    window._fsPendingData = data;
+    window._fsPendingSource = source || '';
+    _schedulePendingFirebaseFlush();
+  }
+
+  function flushPendingFirebaseData(){
+    if(!window._fsPendingData) return true;
+    if(!_isFirebaseStateReady()) return false;
+    const pending = window._fsPendingData;
+    window._fsPendingData = null;
+    if(_applyFirebaseState(pending)){
+      window._fsLastSave = Number(pending._savedAt || 0) || Date.now();
+    }
+    renderAll();
+    _finishFsInitialLoad(true);
+    return true;
+  }
+
   function _applyFirebaseState(data){
+    if(!_isFirebaseStateReady()){
+      _queuePendingFirebaseState(data, 'apply-before-state-ready');
+      return false;
+    }
     if(!data || !Array.isArray(data.reagents)){
       console.warn('Firestore 데이터에 유효한 reagents 배열이 없어 화면 상태를 바꾸지 않습니다.');
       return false;
     }
+    if(window._localDirtyBeforeInitialLoad || window._fsSkipRemoteApplyUntilCloudSave){
+      window._fsRemoteSeen = true;
+      window._fsSkipRemoteApplyUntilCloudSave = true;
+      console.warn('[Firebase] 초기 로딩 중 로컬 변경이 있어 remote snapshot 적용을 보류했습니다.');
+      if(typeof toast === 'function') toast('로컬 임시저장 유지 — 클라우드 동기화 대기 중','w');
+      return false;
+    }
     window._fsRemoteSeen = true;
-    const local = S || {};
+    const local = window.S || {};
     const mergeLocal = _shouldMergeLocal(data);
     const remote = {
       reagents: data.reagents,
@@ -1808,22 +1880,22 @@ function openRegularReagentPicker(idx){
       emergencyOrders: Array.isArray(data.emergencyOrders) ? data.emergencyOrders : (local.emergencyOrders || []),
       regularOrders: Array.isArray(data.regularOrders) ? data.regularOrders : (local.regularOrders || [])
     };
-    S.reagents = mergeLocal ? _mergeById(remote.reagents, local.reagents) : remote.reagents;
-    S.records = mergeLocal ? _mergeById(remote.records, local.records) : remote.records;
-    S.notices = mergeLocal ? _mergeById(remote.notices, local.notices) : remote.notices;
-    S.partPersons = remote.partPersons;
-    S.customDevices = mergeLocal ? _mergeById(remote.customDevices, local.customDevices) : remote.customDevices;
-    S.orderVendors = mergeLocal ? _mergeById(remote.orderVendors, local.orderVendors) : remote.orderVendors;
-    S.regularConfigs = mergeLocal ? _mergeById(remote.regularConfigs, local.regularConfigs) : remote.regularConfigs;
-    S.emergencyOrders = mergeLocal ? _mergeById(remote.emergencyOrders, local.emergencyOrders) : remote.emergencyOrders;
-    S.regularOrders = mergeLocal ? _mergeById(remote.regularOrders, local.regularOrders) : remote.regularOrders;
+    local.reagents = mergeLocal ? _mergeById(remote.reagents, local.reagents) : remote.reagents;
+    local.records = mergeLocal ? _mergeById(remote.records, local.records) : remote.records;
+    local.notices = mergeLocal ? _mergeById(remote.notices, local.notices) : remote.notices;
+    local.partPersons = remote.partPersons;
+    local.customDevices = mergeLocal ? _mergeById(remote.customDevices, local.customDevices) : remote.customDevices;
+    local.orderVendors = mergeLocal ? _mergeById(remote.orderVendors, local.orderVendors) : remote.orderVendors;
+    local.regularConfigs = mergeLocal ? _mergeById(remote.regularConfigs, local.regularConfigs) : remote.regularConfigs;
+    local.emergencyOrders = mergeLocal ? _mergeById(remote.emergencyOrders, local.emergencyOrders) : remote.emergencyOrders;
+    local.regularOrders = mergeLocal ? _mergeById(remote.regularOrders, local.regularOrders) : remote.regularOrders;
     window._fsMergedLocalPending = !!(mergeLocal && (
-      !_sameIdSetLen(S.reagents, remote.reagents) ||
-      !_sameIdSetLen(S.records, remote.records) ||
-      !_sameIdSetLen(S.customDevices, remote.customDevices) ||
-      !_sameIdSetLen(S.notices, remote.notices)
+      !_sameIdSetLen(local.reagents, remote.reagents) ||
+      !_sameIdSetLen(local.records, remote.records) ||
+      !_sameIdSetLen(local.customDevices, remote.customDevices) ||
+      !_sameIdSetLen(local.notices, remote.notices)
     ));
-    localStorage.setItem('rms4', JSON.stringify(S));
+    localStorage.setItem('rms4', JSON.stringify(local));
     return true;
   }
   function _finishFsInitialLoad(success){
@@ -1845,6 +1917,10 @@ function openRegularReagentPicker(idx){
     if(Array.isArray(data.loginUsers) && typeof window.__syncLoginUsersFromFirebase === 'function'){
       window.__syncLoginUsersFromFirebase(data.loginUsers, data._loginUsersSavedAt || data._savedAt || 0, data.loginDeletedUsers || []);
     }
+    if(!_isFirebaseStateReady()){
+      _queuePendingFirebaseState(data, source || 'snapshot-before-state-ready');
+      return;
+    }
     const remoteSavedAt = Number(data._savedAt || 0);
     if(!window._fsInitialLoaded || !window._fsLastSave || remoteSavedAt > window._fsLastSave) {
       if(_applyFirebaseState(data)){
@@ -1853,6 +1929,11 @@ function openRegularReagentPicker(idx){
       if(typeof renderAll === 'function') renderAll();
     }
     _finishFsInitialLoad(true);
+    if(window._fsSkipRemoteApplyUntilCloudSave){
+      if(el){ el.innerHTML = '🟡 로컬'; el.style.color='#fbbf24'; }
+      console.info('[Firebase] remote snapshot 적용 보류: 로컬 변경 수동 저장 대기', source || '');
+      return;
+    }
     if(window._fsMergedLocalPending && typeof window.fs_save === 'function'){
       window._fsMergedLocalPending = false;
       window.fs_save();
@@ -1928,10 +2009,14 @@ function openRegularReagentPicker(idx){
       return false;
     }
     if(window._fsInitialLoadFailed){
-      window._fsSaveBlockedReason = 'initial_load_failed';
-      if(el){ el.innerHTML = '🔴'; el.style.color='#f87171'; }
-      console.warn('[save blocked] Firebase initial load failed. Retry refresh before saving.');
-      return false;
+      if(window._localDirtyBeforeInitialLoad){
+        console.warn('[save retry] Firebase initial load failed, but local dirty data exists. Trying cloud save.');
+      } else {
+        window._fsSaveBlockedReason = 'initial_load_failed';
+        if(el){ el.innerHTML = '🔴'; el.style.color='#f87171'; }
+        console.warn('[save blocked] Firebase initial load failed. Retry refresh before saving.');
+        return false;
+      }
     }
     if(window._fsRemoteSeen && (!Array.isArray(S.reagents) || S.reagents.length === 0)){
       window._fsSaveBlockedReason = 'empty_reagents';
@@ -1950,7 +2035,7 @@ function openRegularReagentPicker(idx){
     const savedAt = Date.now();
     window._fsLastSave = savedAt;
     window._fsSaveInFlight = true;
-    _REF.set({
+    const payload = _sanitizeForFirestore({
       reagents: S.reagents,
       records: S.records,
       notices: S.notices || [],
@@ -1961,8 +2046,12 @@ function openRegularReagentPicker(idx){
       emergencyOrders: S.emergencyOrders || [],
       regularOrders: S.regularOrders || [],
       _savedAt: savedAt
-    }, { merge: true }).then(() => {
+    });
+    _REF.set(payload, { merge: true }).then(() => {
       window._fsSaveInFlight = false;
+      window._localDirtyBeforeInitialLoad = false;
+      window._fsSkipRemoteApplyUntilCloudSave = false;
+      window._lastSaveStatus = 'cloud_saved';
       S._localSavedAt = savedAt;
       localStorage.setItem('rms4', JSON.stringify(S));
       const t = new Date(savedAt);
@@ -1977,6 +2066,7 @@ function openRegularReagentPicker(idx){
       }
     }).catch(e => {
       window._fsSaveInFlight = false;
+      window._lastSaveStatus = 'local_saved_cloud_failed';
       S._localSavedAt = Date.now();
       localStorage.setItem('rms4', JSON.stringify(S));
       if(el){ el.innerHTML = '🔴'; el.style.color='#f87171'; }
@@ -2917,6 +3007,7 @@ let S = (()=>{
 if(!Array.isArray(S.notices)) S.notices = [];
 if(!S.customDevices) S.customDevices = [];
 if(!S.partPersons) S.partPersons = {};
+window.S = S;
 const DEVS = ['503-주시약','503-소모','503-cal','e801-주시약','e801-소모','e801-cal','b221-주시약','b221-소모','b221-cal','nx10n-주시약','nx10n-소모','nx10n-cal'];
 const DV503  = ['503-주시약','503-소모','503-cal'];
 const DVe801 = ['e801-주시약','e801-소모','e801-cal'];
@@ -2932,27 +3023,59 @@ let pendPar=null;
 // localSave: Firebase 실패/빠른 로딩 백업, save: Firestore 원본 저장 우선
 const localSave = ()=>{
   S._localSavedAt = Date.now();
+  if(window._fsInitialLoading || !window._fsInitialLoadDone){
+    window._localDirtyBeforeInitialLoad = true;
+    window._fsSkipRemoteApplyUntilCloudSave = true;
+  }
   localStorage.setItem('rms4', JSON.stringify(S));
+  console.info('[save] localStorage saved', {
+    reason: window._fsSaveBlockedReason || '',
+    dirtyBeforeInitialLoad: !!window._localDirtyBeforeInitialLoad
+  });
 };
 const save = ()=>{
   if(window.fs_save){
     const started = window.fs_save();
-    if(started !== false) return;
-    if(window._fsSaveBlockedReason === 'before_initial_load' || window._fsSaveBlockedReason === 'empty_reagents') return;
+    if(started !== false){
+      localSave();
+      window._lastSaveStatus = 'local_saved_pending_cloud';
+      return 'local_saved_pending_cloud';
+    }
+    if(window._fsSaveBlockedReason === 'before_initial_load'){
+      localSave();
+      window._lastSaveStatus = 'local_saved_pending_cloud';
+      if(typeof toast === 'function') toast('로컬 임시저장 완료 — 클라우드 동기화 대기 중','w');
+      return 'local_saved_pending_cloud';
+    }
+    if(window._fsSaveBlockedReason === 'empty_reagents'){
+      window._lastSaveStatus = 'save_failed';
+      return 'save_failed';
+    }
+    if(window._fsSaveBlockedReason === 'initial_load_failed'){
+      localSave();
+      window._lastSaveStatus = 'local_saved_cloud_failed';
+      return 'local_saved_cloud_failed';
+    }
   }
   localSave();
+  window._lastSaveStatus = 'local_saved_pending_cloud';
+  return 'local_saved_pending_cloud';
 };
 function manualSave(){
   if(!confirm('저장하시겠습니까?\n저장 후에는 되돌리기가 불가합니다.')) return;
   window._fsManualSaveNotify = true;
   const remoteSaveStarted = window.fs_save ? window.fs_save() : false;
   if(remoteSaveStarted !== false){
+    localSave();
+    window._lastSaveStatus = 'local_saved_pending_cloud';
     toast('Firebase 저장 중입니다','s');
     return;
   }
   window._fsManualSaveNotify = false;
   if(window._fsSaveBlockedReason === 'before_initial_load'){
-    toast('Firebase 로딩 중입니다. 잠시 후 다시 저장해주세요','w');
+    localSave();
+    window._lastSaveStatus = 'local_saved_pending_cloud';
+    toast('로컬 임시저장 완료 — 클라우드 동기화 대기 중','w');
     return;
   }
   if(window._fsSaveBlockedReason === 'initial_load_failed'){
@@ -3515,6 +3638,8 @@ function renderAll(){
   _allDeviceKeys().forEach(dv=>{ renderPills(dv); renderLedger(dv); });
   updateStats();
 }
+window._appStateReadyForFirebase = true;
+if(typeof flushPendingFirebaseData === 'function') flushPendingFirebaseData();
 
 
 function _toggleReagentSearchClear(pageKey){
