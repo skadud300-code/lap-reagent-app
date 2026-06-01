@@ -1926,6 +1926,7 @@ function openRegularReagentPicker(idx){
       if(_applyFirebaseState(data)){
         window._fsLastSave = remoteSavedAt || Date.now();
       }
+      if(typeof rollbackWrongS1RinseQtyPatch === 'function') rollbackWrongS1RinseQtyPatch();
       if(typeof renderAll === 'function') renderAll();
     }
     _finishFsInitialLoad(true);
@@ -3883,6 +3884,50 @@ function inboundLedgerQty(rec, reagent){
   const device = (rec && rec.device) || (reagent && reagent.device) || '';
   return _isCalQcDeviceKey(device) ? inboundBoxQty(rec) : inboundActualQty(rec, reagent);
 }
+function isS1Rinse2PcsReagent(reagent){
+  const name = String(reagent && reagent.name || '').toUpperCase();
+  const unit = String(reagent && reagent.unit || '').toUpperCase();
+  const device = String(reagent && reagent.device || '');
+  return device === 'b221-주시약'
+    && name.includes('S1 RINSE')
+    && (name.includes('2PCS') || unit.includes('2PCS'));
+}
+function getOpenSlotCountForInbound(reagent, inboundRecord){
+  const qty = parseInt(inboundRecord && inboundRecord.qty, 10) || 1;
+  return isS1Rinse2PcsReagent(reagent) ? qty * 2 : inboundLedgerQty(inboundRecord, reagent);
+}
+function rollbackWrongS1RinseQtyPatch(){
+  if(!window.S || !Array.isArray(S.reagents) || !Array.isArray(S.records)) return false;
+
+  const reagentMap = new Map(S.reagents.map(r => [String(r.id), r]));
+  let changed = false;
+
+  S.records.forEach(rec => {
+    if(!rec || rec.type !== '입고') return;
+
+    const reagent = reagentMap.get(String(rec.reagentId));
+    if(!isS1Rinse2PcsReagent(reagent)) return;
+
+    const lot = String(rec.lot || '');
+    const date = String(rec.registeredAt || '');
+    const isTarget =
+      (date === '2026-02-04' && lot === '21450691') ||
+      (date === '2026-03-05' && lot === '21450691') ||
+      (date === '2026-04-01' && lot === '21453091');
+
+    if(isTarget && Number(rec.qty) === 2){
+      rec.qty = 1;
+      changed = true;
+    }
+  });
+
+  if(changed){
+    localStorage.setItem('rms4', JSON.stringify(S));
+    if(window.fs_save) window.fs_save();
+  }
+
+  return changed;
+}
 
 function renderLedger(dv){
   const wrap=document.getElementById('ledger-'+dv);
@@ -3980,7 +4025,7 @@ function renderLedger(dv){
     // 개봉 행은 slot(행 위치)을 우선 사용해서 고정 배치
     const openKids = kids.filter(k=>k.type!=='폐기');
     const ibQty = ib?inboundLedgerQty(ib, reagent):1;
-    const rowQty = _isCalQcDeviceKey(dv) ? Math.max(ibQty, openKids.length || 0, 1) : ibQty;
+    const rowQty = ib ? (_isCalQcDeviceKey(dv) ? Math.max(ibQty, openKids.length || 0, 1) : getOpenSlotCountForInbound(reagent, ib)) : 1;
     const slottedOpenKids = new Array(rowQty).fill(null);
     const unslottedOpenKids = [];
 
@@ -7550,6 +7595,7 @@ function dvSaveAll(){
   if(changed) localSave();
 })();
 
+rollbackWrongS1RinseQtyPatch();
 renderAll();
 
 
